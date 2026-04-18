@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCS Wine Closet Inventory · FAQ</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f5efe3;
+    --parchment-dark: #ede4d0;
+    --ink: #1c1410;
+    --ink-mid: #3d2e22;
+    --ink-light: #7a6050;
+    --ink-faint: #b8a48a;
+    --wine: #6b1225;
+    --wine-light: #8b1a32;
+    --wine-pale: #f0e4e8;
+    --gold: #a07828;
+    --gold-light: #c8a050;
+    --gold-pale: #f8f0e0;
+    --border: #d4c4a8;
+    --border-light: #e8dcc8;
+    --shadow: rgba(28, 20, 16, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* subtle paper texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 60px 48px 80px; }
+
+  /* ── MASTHEAD ── */
+  .masthead { border-bottom: 2px solid var(--wine); padding-bottom: 28px; margin-bottom: 40px; }
+  .masthead-eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--wine); margin-bottom: 12px; display: flex; align-items: center; gap: 12px; }
+  .masthead-eyebrow::after { content: ''; flex: 1; height: 1px; background: var(--wine); opacity: 0.3; }
+  .masthead-title { font-family: 'Playfair Display', serif; font-size: 46px; font-weight: 700; color: var(--ink); line-height: 1.1; letter-spacing: -0.01em; margin-bottom: 8px; }
+  .masthead-title em { color: var(--wine); font-style: italic; }
+  .masthead-subtitle { font-size: 14px; color: var(--ink-light); font-style: italic; margin-bottom: 18px; }
+  .masthead-meta { display: flex; gap: 24px; font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  /* ── INTRO ── */
+  .intro { background: var(--wine-pale); border-left: 4px solid var(--wine); border-radius: 0 6px 6px 0; padding: 18px 22px; margin-bottom: 44px; font-size: 14px; color: var(--ink-mid); font-style: italic; line-height: 1.75; }
+  .intro strong { font-style: normal; color: var(--wine); }
+
+  /* ── SECTION HEADERS ── */
+  .section-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 18px; display: flex; align-items: center; gap: 12px; }
+  .section-label::before { content: '§'; font-family: 'Playfair Display', serif; font-size: 14px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--gold-light); opacity: 0.4; }
+
+  /* ── FAQ ITEMS ── */
+  .faq-group { margin-bottom: 52px; }
+
+  .faq-item { margin-bottom: 2px; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; transition: border-color 0.2s; }
+  .faq-item:hover { border-color: var(--wine-light); }
+  .faq-item.open { border-color: var(--wine); box-shadow: 0 2px 16px var(--shadow); }
+
+  .faq-q { display: flex; align-items: flex-start; gap: 16px; padding: 20px 22px; cursor: pointer; user-select: none; background: #fff; transition: background 0.15s; }
+  .faq-q:hover { background: var(--gold-pale); }
+  .faq-item.open .faq-q { background: var(--wine-pale); }
+
+  .faq-num { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: var(--wine); min-width: 22px; margin-top: 2px; }
+  .faq-qtext { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; color: var(--ink); flex: 1; line-height: 1.4; }
+  .faq-item.open .faq-qtext { color: var(--wine); }
+  .faq-tag { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 3px; white-space: nowrap; margin-top: 3px; flex-shrink: 0; }
+  .tag-ops { background: #e8f0e8; color: #2a5a2a; border: 1px solid #b8d4b8; }
+  .tag-access { background: #e8eaf8; color: #2a2a6a; border: 1px solid #b8bcdc; }
+  .tag-tech { background: #f8f0e0; color: #6a4a10; border: 1px solid #dcc890; }
+  .tag-risk { background: #f8e8ea; color: #6a1a28; border: 1px solid #dcb8be; }
+  .faq-chevron { color: var(--ink-faint); font-size: 11px; margin-top: 4px; transition: transform 0.25s; flex-shrink: 0; }
+  .faq-item.open .faq-chevron { transform: rotate(90deg); color: var(--wine); }
+
+  .faq-a { display: none; padding: 0 22px 22px 60px; background: #fff; }
+  .faq-item.open .faq-a { display: block; }
+
+  .faq-a p { color: var(--ink-mid); font-size: 14px; line-height: 1.8; margin-bottom: 12px; }
+  .faq-a p:last-child { margin-bottom: 0; }
+  .faq-a strong { color: var(--ink); font-weight: 600; }
+  .faq-a em { color: var(--wine); font-style: italic; }
+
+  .faq-a .answer-block { background: var(--parchment); border: 1px solid var(--border-light); border-radius: 4px; padding: 14px 16px; margin: 12px 0; }
+  .faq-a .answer-block-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+  .faq-a .step-list { list-style: none; padding: 0; }
+  .faq-a .step-list li { display: flex; gap: 10px; padding: 5px 0; font-size: 13px; color: var(--ink-mid); border-bottom: 1px solid var(--border-light); line-height: 1.6; }
+  .faq-a .step-list li:last-child { border-bottom: none; }
+  .faq-a .step-list li::before { content: '→'; color: var(--wine); font-size: 12px; margin-top: 2px; flex-shrink: 0; }
+
+  .faq-a .guardrail-list { list-style: none; padding: 0; margin: 10px 0; }
+  .faq-a .guardrail-list li { font-size: 13px; color: var(--ink-mid); padding: 6px 0 6px 20px; position: relative; border-bottom: 1px dotted var(--border-light); line-height: 1.6; }
+  .faq-a .guardrail-list li:last-child { border-bottom: none; }
+  .faq-a .guardrail-list li::before { content: '◆'; position: absolute; left: 0; color: var(--gold-light); font-size: 8px; top: 10px; }
+
+  .faq-a .callout { background: var(--wine-pale); border-left: 3px solid var(--wine); padding: 12px 14px; border-radius: 0 4px 4px 0; margin: 12px 0; font-size: 13px; color: var(--wine); font-style: italic; line-height: 1.7; }
+  .faq-a .callout.gold { background: var(--gold-pale); border-left-color: var(--gold); color: var(--gold); }
+
+  .faq-a code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--parchment-dark); padding: 1px 6px; border-radius: 3px; color: var(--wine); border: 1px solid var(--border); }
+
+  /* ── KNOWN ISSUES ── */
+  .issues-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+  .issue-card { background: #fff; border: 1px solid var(--border); border-radius: 4px; padding: 16px; }
+  .issue-card.critical { border-left: 3px solid var(--wine); }
+  .issue-card.medium { border-left: 3px solid var(--gold); }
+  .issue-card.low { border-left: 3px solid #a0b8a0; }
+  .issue-title { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .issue-body { font-size: 12px; color: var(--ink-light); line-height: 1.6; }
+  .issue-priority { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+  .priority-critical { color: var(--wine); }
+  .priority-medium { color: var(--gold); }
+  .priority-low { color: #5a8a5a; }
+
+  /* ── FOOTER ── */
+  .page-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 13px; color: var(--ink-faint); font-style: italic; }
+  .footer-date { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink-faint); letter-spacing: 0.1em; }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: white; }
+    body::before { display: none; }
+    .faq-a { display: block !important; }
+    .faq-chevron { display: none; }
+    .faq-q { cursor: default; background: var(--wine-pale) !important; }
+    .page { padding: 20px; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .faq-item { animation: fadeUp 0.4s ease both; }
+  .faq-item:nth-child(1) { animation-delay: 0.05s; }
+  .faq-item:nth-child(2) { animation-delay: 0.1s; }
+  .faq-item:nth-child(3) { animation-delay: 0.15s; }
+  .faq-item:nth-child(4) { animation-delay: 0.2s; }
+  .faq-item:nth-child(5) { animation-delay: 0.25s; }
+  .faq-item:nth-child(6) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- MASTHEAD -->
+  <div class="masthead">
+    <div class="masthead-eyebrow">Grand Cru Selections · Operations</div>
+    <div class="masthead-title">GCS Wine Closet<br><em>Inventory System</em></div>
+    <div class="masthead-subtitle">Frequently Asked Questions — Meeting Reference · April 21, 2026</div>
+    <div class="masthead-meta">
+      <span>QR · Microsoft Forms · Lists · Power Automate</span>
+      <span>Prepared by James Carroll</span>
+    </div>
+  </div>
+
+  <div class="intro">
+    <strong>About this document:</strong> This FAQ covers the most common questions about the GCS Wine Closet QR Tracking System — how it works, what it can and can't do, and what we plan to improve. Brought to the April 21 meeting as a reference for Maggie, Christian, and the wider team.
+  </div>
+
+  <!-- SECTION 1: OPERATIONS -->
+  <div class="faq-group">
+    <div class="section-label">Day-to-Day Operations</div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">01</span>
+        <span class="faq-qtext">What happens if someone scans the wrong QR code by mistake — can it be undone?</span>
+        <span class="faq-tag tag-ops">Operations</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>There is no automatic undo button, but the fix is quick — a two-step correction using the form itself takes about 30 seconds.</p>
+        <div class="answer-block">
+          <div class="answer-block-title">Example — Checked out Wine A when you meant Wine B</div>
+          <ul class="step-list">
+            <li>Scan <strong>Wine A</strong> again → select <strong>Check-In</strong> → enter the same quantity → restores the count</li>
+            <li>Scan <strong>Wine B</strong> → select <strong>Check-Out</strong> → enter the correct quantity → logs the right transaction</li>
+          </ul>
+        </div>
+        <p>Once the <strong>Activity Log</strong> is live, both the original error and the correction will appear as rows — giving a clear, honest audit trail rather than hiding the mistake.</p>
+        <div class="callout">Near-term improvement: We can add a "Correction / Mistake" option to the Action field in the form. Selecting it skips any quantity update and just logs a note — preventing a bad submission from affecting the count at all.</div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">02</span>
+        <span class="faq-qtext">What stops someone from submitting incorrect quantities?</span>
+        <span class="faq-tag tag-ops">Operations</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>Right now, the system is trust-based — the form accepts any number. There are three layers of protection we can add:</p>
+        <ul class="guardrail-list">
+          <li><strong>Form restriction (quick win):</strong> Set a maximum value of 12 on the Quantity field — no one can accidentally type 100. Go to Quantity question → <code>...</code> → Restrictions → Number → Less than or equal to → 12.</li>
+          <li><strong>Power Automate alert (moderate):</strong> If quantity entered is greater than 6, the flow sends a Teams notification flagging it for review. Not a hard block, but a safety net for unusual entries.</li>
+          <li><strong>Negative quantity guard (important):</strong> Currently nothing prevents stock from going below zero. A condition before the update step can catch this and alert rather than proceed.</li>
+        </ul>
+        <div class="callout gold">The best answer long-term is the Activity Log — even if someone submits wrongly, there's a full record to trace and correct. Auditability beats prevention in a small, trusted team.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION 2: ACCESS -->
+  <div class="faq-group">
+    <div class="section-label">Access &amp; Permissions</div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">03</span>
+        <span class="faq-qtext">Who can see the Microsoft List — is it just Operations or the whole company?</span>
+        <span class="faq-tag tag-access">Access</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>Currently the list lives on the <strong>Grand Cru Selections</strong> SharePoint site and inherits its permissions. That site has <strong>49 members</strong> — so visibility is broad by default.</p>
+        <p>Restricting access to Operations only is straightforward: List Settings → Permissions → Stop inheriting → manually assign access. Takes about 5 minutes and can be done before go-live.</p>
+        <div class="callout">Decision needed: Should this list be Operations-only, or is wider read access desirable? See the Sales question below for context.</div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">04</span>
+        <span class="faq-qtext">Can the sales team see current stock levels from their phones?</span>
+        <span class="faq-tag tag-access">Access</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>Yes — anyone with SharePoint site access can open the list on any phone browser and see live counts instantly. No app needed.</p>
+        <ul class="guardrail-list">
+          <li><strong>Direct link:</strong> Share a bookmark to the list view — one tap and they're in.</li>
+          <li><strong>Filtered view:</strong> Create a "Sales View" in Microsoft Lists showing only In Stock wines, sorted by shelf — a clean read-only snapshot perfect for pre-visit checks.</li>
+          <li><strong>Read-only access:</strong> Grant sales team View permission only — they can see counts but can't edit anything.</li>
+        </ul>
+        <div class="callout gold">This is a genuine value-add for the sales team — knowing exactly what's in the closet before a client tasting or delivery call.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION 3: TECHNICAL -->
+  <div class="faq-group">
+    <div class="section-label">Technical &amp; Reliability</div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">05</span>
+        <span class="faq-qtext">What happens if the flow fails silently — how would we know?</span>
+        <span class="faq-tag tag-tech">Technical</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>Power Automate automatically emails the flow owner (<strong>jcarroll@grandcruselections.com</strong>) when a run fails — subject line: <em>"Your flow GCS Wine Inventory Room failed."</em> This is on by default and is the baseline safety net.</p>
+        <div class="answer-block">
+          <div class="answer-block-title">How to confirm email alerts are enabled</div>
+          <ul class="step-list">
+            <li>Go to Power Automate → My flows → GCS Wine Inventory Room</li>
+            <li>Click Edit → Settings → confirm "Send email notification for failed runs" is ON</li>
+          </ul>
+        </div>
+        <p>For a more proactive alert, we can add a <strong>failure branch</strong> using "Configure run after" on each step — if any step fails, an immediate Teams message fires rather than a quiet email. This is on the enhancements list.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">06</span>
+        <span class="faq-qtext">Does this work without WiFi in the wine room?</span>
+        <span class="faq-tag tag-tech">Technical</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p><strong>No</strong> — the form requires an active internet connection to submit. Power Automate runs in the cloud, so there is no offline mode. The QR code will scan and the form will open, but submission will fail without connectivity.</p>
+        <ul class="guardrail-list">
+          <li><strong>Check signal strength</strong> in the wine room before go-live — scan a QR and submit a test response from that exact spot.</li>
+          <li><strong>WiFi extender</strong> — if the room is in a basement or dead zone, a simple extender solves it.</li>
+          <li><strong>Cell data fallback</strong> — staff phones on a data plan don't need office WiFi at all.</li>
+        </ul>
+        <div class="callout">Action item: Test connectivity in the wine room before printing labels.</div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">07</span>
+        <span class="faq-qtext">What if someone doesn't have a smartphone?</span>
+        <span class="faq-tag tag-tech">Technical</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>The QR scan step requires a phone camera, so a smartphone is the primary device. Two alternatives if needed:</p>
+        <ul class="guardrail-list">
+          <li><strong>Shared device:</strong> A dedicated tablet or phone mounted or stored in the wine room — charged and ready, no personal device required.</li>
+          <li><strong>Direct form URL:</strong> Any computer with a browser can access the form directly. Staff type the SKU manually instead of having it pre-filled. A desktop shortcut or browser bookmark makes this a one-click action.</li>
+        </ul>
+        <p>For the GCS team where everyone likely has a smartphone, this is probably not a real blocker — but good to have an answer ready.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SECTION 4: KNOWN ISSUES -->
+  <div class="faq-group">
+    <div class="section-label">Known Limitations &amp; Roadmap</div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">08</span>
+        <span class="faq-qtext">What are the known holes in the system right now?</span>
+        <span class="faq-tag tag-risk">Known Issues</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <p>Being transparent about current limitations and the plan to address them:</p>
+        <div class="issues-grid">
+          <div class="issue-card critical">
+            <div class="issue-priority priority-critical">● Fix Before Go-Live</div>
+            <div class="issue-title">305-Wine Import Incomplete</div>
+            <div class="issue-body">Only ~10 rows are in the list. Scanning an unlisted wine logs nothing silently.</div>
+          </div>
+          <div class="issue-card critical">
+            <div class="issue-priority priority-critical">● Fix Before Go-Live</div>
+            <div class="issue-title">Quantity Can Go Negative</div>
+            <div class="issue-body">No guard prevents stock from going below zero if more bottles are checked out than exist.</div>
+          </div>
+          <div class="issue-card medium">
+            <div class="issue-priority priority-medium">● Fix Soon</div>
+            <div class="issue-title">Audit Action Logic</div>
+            <div class="issue-body">Audit should set quantity absolutely, not add to it. Current flow adds, which corrupts audit entries.</div>
+          </div>
+          <div class="issue-card medium">
+            <div class="issue-priority priority-medium">● Fix Soon</div>
+            <div class="issue-title">No Staff Name Capture</div>
+            <div class="issue-body">Last Action By is blank. Need a Staff Name field on the form to track who did what.</div>
+          </div>
+          <div class="issue-card low">
+            <div class="issue-priority priority-low">● Nice to Have</div>
+            <div class="issue-title">QR Labels Show Stale Counts</div>
+            <div class="issue-body">Labels show original spreadsheet quantities, not live counts. Cosmetic only — the list is always accurate.</div>
+          </div>
+          <div class="issue-card low">
+            <div class="issue-priority priority-low">● Nice to Have</div>
+            <div class="issue-title">Status Doesn't Auto-Update</div>
+            <div class="issue-body">When quantity hits zero, Status stays "In Stock." Should auto-change to "Out of Stock."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggle(this)">
+        <span class="faq-num">09</span>
+        <span class="faq-qtext">What enhancements are planned after go-live?</span>
+        <span class="faq-tag tag-ops">Roadmap</span>
+        <span class="faq-chevron">▶</span>
+      </div>
+      <div class="faq-a">
+        <ul class="guardrail-list">
+          <li><strong>Activity Log</strong> — separate list recording every scan as a new row, full history of every bottle movement</li>
+          <li><strong>Low Stock Alert</strong> — automatic Teams/email notification when a wine drops to 2 bottles or fewer</li>
+          <li><strong>Negative quantity guard</strong> — prevents check-outs that would take stock below zero</li>
+          <li><strong>Audit branch</strong> — third flow path that sets quantity absolutely for physical counts</li>
+          <li><strong>Auto Out of Stock status</strong> — Status field updates automatically when quantity hits zero</li>
+          <li><strong>Correction / Mistake action</strong> — form option that skips quantity update, logs a note only</li>
+          <li><strong>Sales read-only view</strong> — filtered Microsoft Lists view for the sales team</li>
+          <li><strong>Live QR tool</strong> — HTML label generator pulling live data from SharePoint instead of embedded snapshot</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="page-footer">
+    <div class="footer-brand">Grand Cru Selections · Wine Closet Inventory System</div>
+    <div class="footer-date">April 21, 2026 · James Carroll</div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(header) {
+    const item = header.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  }
+
+  // Open first item by default
+  document.querySelector('.faq-item').classList.add('open');
+</script>
+</body>
+</html>

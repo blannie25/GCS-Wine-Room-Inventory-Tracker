@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GCS Wine Room · QR Tracking System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0a08;
+    --surface: #1a1410;
+    --surface2: #231c16;
+    --surface3: #2e2318;
+    --gold: #c9a84c;
+    --gold-light: #e2c47a;
+    --burgundy: #8b1a2e;
+    --burgundy-light: #b8243f;
+    --cream: #f0e8d8;
+    --cream-dim: #b8a88a;
+    --text: #e8dcc8;
+    --text-dim: #8a7a65;
+    --border: #3a2e22;
+    --border-light: #4a3a28;
+    --green: #4caf7d;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, var(--surface) 0%, #110d0a 100%); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; }
+  .header-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 600; color: var(--gold); letter-spacing: 0.04em; }
+  .header-sub { font-size: 11px; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 2px; }
+  .header-divider { width: 1px; height: 36px; background: var(--border); margin: 0 8px; }
+  .header-title { font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 400; color: var(--cream-dim); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 28px; }
+  .tab { padding: 14px 20px; cursor: pointer; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; color: var(--text-dim); border-bottom: 2px solid transparent; transition: all 0.2s; text-transform: uppercase; }
+  .tab:hover { color: var(--cream); }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  /* MAIN LAYOUT */
+  .main { padding: 24px 28px; max-width: 1400px; }
+
+  /* CONTROLS */
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+  .search-wrap { position: relative; flex: 1; min-width: 220px; }
+  .search-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 14px 9px 36px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .search-wrap input:focus { border-color: var(--gold); }
+  .search-wrap::before { content: '⌕'; position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 16px; pointer-events: none; }
+  select { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 9px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; cursor: pointer; }
+  select:focus { border-color: var(--gold); }
+  .btn { padding: 9px 16px; border-radius: var(--radius); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; transition: all 0.15s; white-space: nowrap; }
+  .btn-primary { background: var(--gold); color: #1a1410; }
+  .btn-primary:hover { background: var(--gold-light); }
+  .btn-secondary { background: var(--surface3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-danger { background: var(--burgundy); color: #fff; }
+  .btn-danger:hover { background: var(--burgundy-light); }
+  .count-badge { background: var(--surface3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--cream-dim); }
+  .selected-badge { background: var(--burgundy); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #fff; display: none; }
+  .selected-badge.visible { display: inline; }
+
+  /* STATS BAR */
+  .stats-bar { display: flex; gap: 20px; margin-bottom: 20px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .stat { text-align: center; }
+  .stat-val { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--gold); font-weight: 600; }
+  .stat-lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+  /* GRID */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; cursor: pointer; transition: all 0.15s; position: relative; user-select: none; }
+  .card:hover { border-color: var(--border-light); background: var(--surface2); }
+  .card.selected { border-color: var(--gold); background: #1e1708; }
+  .card.selected::after { content: '✓'; position: absolute; top: 10px; right: 10px; width: 20px; height: 20px; background: var(--gold); color: #1a1410; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .card-sku { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-dim); letter-spacing: 0.06em; margin-bottom: 6px; }
+  .card-wine { font-family: 'Cormorant Garamond', serif; font-size: 15px; color: var(--cream); line-height: 1.3; margin-bottom: 6px; }
+  .card-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 2px 7px; border-radius: 3px; font-size: 10px; font-weight: 500; letter-spacing: 0.05em; }
+  .chip-vintage { background: #2a1f14; color: var(--gold); border: 1px solid #3a2e1a; }
+  .chip-shelf { background: #0f1a12; color: #6dbf8a; border: 1px solid #1a3020; }
+  .chip-qty { background: #1a0f14; color: #c47d94; border: 1px solid #2e1820; }
+  .chip-note { background: #0f141a; color: #7db3c4; border: 1px solid #182030; }
+
+  /* GUIDE TAB */
+  .guide { max-width: 820px; }
+  .guide-section { margin-bottom: 32px; }
+  .guide-step { display: flex; gap: 0; margin-bottom: 12px; }
+  .step-num { min-width: 36px; height: 36px; background: var(--burgundy); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 16px; color: #fff; font-weight: 600; margin-right: 14px; margin-top: 2px; flex-shrink: 0; }
+  .step-body h4 { color: var(--gold); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  .step-body p { color: var(--cream-dim); font-size: 13px; line-height: 1.65; }
+  .step-body code { font-family: 'DM Mono', monospace; font-size: 11px; background: var(--surface3); padding: 1px 6px; border-radius: 3px; color: var(--gold-light); border: 1px solid var(--border); }
+  .step-body ul { color: var(--cream-dim); font-size: 13px; line-height: 1.65; margin-top: 4px; padding-left: 18px; }
+  .guide h2 { font-family: 'Cormorant Garamond', serif; font-size: 26px; color: var(--cream); font-weight: 600; margin-bottom: 6px; }
+  .guide h3 { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: var(--gold); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .guide-intro { color: var(--cream-dim); font-size: 14px; line-height: 1.7; margin-bottom: 28px; padding: 16px; background: var(--surface); border-left: 3px solid var(--gold); border-radius: 0 var(--radius) var(--radius) 0; }
+  .arch-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .arch-node { background: var(--surface3); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 8px 14px; text-align: center; }
+  .arch-node-title { color: var(--gold); font-weight: 500; font-size: 12px; }
+  .arch-node-sub { color: var(--text-dim); font-size: 10px; margin-top: 2px; }
+  .arch-arrow { color: var(--gold); font-size: 18px; }
+  .field-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+  .field-table th { background: var(--surface3); color: var(--gold); padding: 8px 10px; text-align: left; font-weight: 600; letter-spacing: 0.05em; border: 1px solid var(--border); }
+  .field-table td { padding: 7px 10px; border: 1px solid var(--border); color: var(--cream-dim); }
+  .field-table tr:nth-child(even) td { background: var(--surface2); }
+
+  /* PRINT MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 28px; max-width: 560px; width: 95%; max-height: 85vh; overflow-y: auto; }
+  .modal h3 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--cream); margin-bottom: 6px; }
+  .modal p { color: var(--cream-dim); font-size: 13px; margin-bottom: 18px; }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+  .label-preview { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; max-height: 300px; overflow-y: auto; }
+  .label-card { background: #fff; border-radius: 4px; padding: 10px; text-align: center; width: 160px; }
+  .label-card .lc-qr { margin: 0 auto 8px; }
+  .label-card .lc-wine { font-family: serif; font-size: 9px; color: #222; line-height: 1.3; font-weight: 600; margin-bottom: 3px; }
+  .label-card .lc-sku { font-family: monospace; font-size: 8px; color: #666; }
+  .label-card .lc-meta { font-size: 8px; color: #555; margin-top: 2px; }
+
+  /* PRINT STYLES */
+  @media print {
+    .header, .tabs, .controls, .stats-bar, .modal-overlay, #tab-guide { display: none !important; }
+    body { background: white; color: black; }
+    #print-area { display: flex !important; flex-wrap: wrap; gap: 12px; padding: 12px; }
+    .print-label { width: 180px; background: white; border: 1px solid #ccc; border-radius: 4px; padding: 10px; text-align: center; page-break-inside: avoid; }
+    .print-label .pl-wine { font-family: serif; font-size: 10px; font-weight: 700; color: #111; line-height: 1.3; margin-bottom: 4px; }
+    .print-label .pl-sku { font-family: monospace; font-size: 8px; color: #444; }
+    .print-label .pl-meta { font-size: 8px; color: #666; margin-top: 2px; }
+    #tab-labels .grid { display: none !important; }
+  }
+  #print-area { display: none; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .no-results { text-align: center; padding: 60px 20px; color: var(--text-dim); font-family: 'Cormorant Garamond', serif; font-size: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">Grand Cru Selections</div>
+    <div class="header-sub">Wine Room · QR Tracking System</div>
+  </div>
+  <div class="header-divider"></div>
+  <div class="header-title">Microsoft Forms + Lists + Power Automate</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('labels')">🏷 QR Label Generator</div>
+  <div class="tab" onclick="switchTab('guide')">📋 System Setup Guide</div>
+</div>
+
+<!-- TAB: LABELS -->
+<div id="tab-labels" class="tab-content active main">
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="controls">
+    <div class="search-wrap"><input type="text" id="searchInput" placeholder="Search wine, SKU, producer…" oninput="filterItems()"></div>
+    <select id="shelfFilter" onchange="filterItems()"><option value="">All Shelves</option></select>
+    <span class="count-badge" id="countBadge">305 items</span>
+    <span class="selected-badge" id="selectedBadge">0 selected</span>
+    <button class="btn btn-secondary" onclick="selectAll()">Select All Visible</button>
+    <button class="btn btn-secondary" onclick="clearSelection()">Clear</button>
+    <button class="btn btn-primary" onclick="openPrintModal()">🖨 Print QR Labels</button>
+  </div>
+
+  <div class="grid" id="wineGrid"></div>
+  <div class="no-results" id="noResults" style="display:none">No wines found</div>
+</div>
+
+<!-- TAB: GUIDE -->
+<div id="tab-guide" class="tab-content main">
+  <div class="guide">
+    <h2>QR-Based Wine Room Tracking System</h2>
+    <div class="guide-intro">
+      A no-scanner, phone-first tracking system using tools you already have. Staff scan a QR code on any wine shelf → a Microsoft Form opens with the item pre-filled → they log the activity → Power Automate updates the master Microsoft List automatically.
+    </div>
+
+    <div class="arch-diagram">
+      <div class="arch-node"><div class="arch-node-title">📱 QR Label</div><div class="arch-node-sub">Per SKU · On each shelf</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node"><div class="arch-node-title">📋 Microsoft Form</div><div class="arch-node-sub">SKU pre-filled · Staff logs action</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node"><div class="arch-node-title">⚡ Power Automate</div><div class="arch-node-sub">Triggers on submit</div></div>
+      <div class="arch-arrow">→</div>
+      <div class="arch-node"><div class="arch-node-title">📊 Microsoft Lists</div><div class="arch-node-sub">Master inventory updated</div></div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Step 1 · Microsoft Lists — Create Your Master Inventory</h3>
+      <div class="guide-step"><div class="step-num">1</div><div class="step-body"><h4>Create a new list</h4><p>Go to <code>lists.microsoft.com</code> → New List → Blank list. Name it <code>GCS Wine Room Inventory</code>.</p></div></div>
+      <div class="guide-step"><div class="step-num">2</div><div class="step-body"><h4>Add these columns</h4>
+        <table class="field-table">
+          <tr><th>Column Name</th><th>Type</th><th>Notes</th></tr>
+          <tr><td>Title</td><td>Single line of text</td><td>Use for SKU (e.g. GCRU7605-15) — this is the key field</td></tr>
+          <tr><td>Wine</td><td>Single line of text</td><td>Full wine name</td></tr>
+          <tr><td>Vintage</td><td>Single line of text</td><td>Year or NV</td></tr>
+          <tr><td>Shelf</td><td>Number</td><td>Shelf number</td></tr>
+          <tr><td>Quantity</td><td>Number</td><td>Current bottle count</td></tr>
+          <tr><td>Cost</td><td>Currency</td><td>Cost per bottle</td></tr>
+          <tr><td>LastActivity</td><td>Date &amp; Time</td><td>Auto-updated by Power Automate</td></tr>
+          <tr><td>LastAction</td><td>Choice</td><td>Check-Out · Check-In · Audit · Tasting · Broken/Loss</td></tr>
+          <tr><td>LastStaff</td><td>Person</td><td>Who performed last action</td></tr>
+          <tr><td>Notes</td><td>Multiple lines</td><td>Optional notes</td></tr>
+        </table>
+      </div></div>
+      <div class="guide-step"><div class="step-num">3</div><div class="step-body"><h4>Import your inventory</h4><p>Use the QR Label Generator tab → export the inventory data, or manually import from the GCS_Wine_Room_Inventory.xlsx file. In Lists, click <code>+ New</code> → Import from Excel to bulk-load all 305 SKUs.</p></div></div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Step 2 · Microsoft Forms — Build the Activity Form</h3>
+      <div class="guide-step"><div class="step-num">1</div><div class="step-body"><h4>Open the GCS Activity Log form</h4><p>Open your existing form via the Forms link in the QR code above. Ensure it has these fields:</p>
+        <table class="field-table">
+          <tr><th>Field Name</th><th>Type</th><th>Required</th></tr>
+          <tr><td>Item ID (SKU)</td><td>Short answer</td><td>Yes — this is pre-filled via QR URL</td></tr>
+          <tr><td>Action</td><td>Choice</td><td>Yes — Check-Out, Check-In, Audit, Tasting, Broken/Loss</td></tr>
+          <tr><td>Quantity</td><td>Number</td><td>Yes — bottles being moved/counted</td></tr>
+          <tr><td>Staff Name</td><td>Short answer or Name field</td><td>Yes</td></tr>
+          <tr><td>Notes</td><td>Long answer</td><td>No</td></tr>
+          <tr><td>Timestamp</td><td>Auto-captured by Forms</td><td>Auto</td></tr>
+        </table>
+      </div></div>
+      <div class="guide-step"><div class="step-num">2</div><div class="step-body"><h4>Get the pre-fill field ID for Item ID</h4><p>In the form editor, click the Item ID field → click the 3 dots (…) → <code>Pre-fill</code>. Copy the field parameter from the URL (it looks like <code>r329dcc1f968543...</code>). This is already baked into your QR codes on the Label Generator tab.</p></div></div>
+      <div class="guide-step"><div class="step-num">3</div><div class="step-body"><h4>Test one QR code</h4><p>From the Label Generator tab, select any item → Print. Scan it with your phone. The form should open with the SKU pre-filled. Complete a test submission before building the automation.</p></div></div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Step 3 · Power Automate — Connect Form to List</h3>
+      <div class="guide-step"><div class="step-num">1</div><div class="step-body"><h4>Create a new automated cloud flow</h4><p>Go to <code>make.powerautomate.com</code> → New Flow → Automated cloud flow. Search for trigger: <code>When a new response is submitted</code> (Microsoft Forms connector).</p></div></div>
+      <div class="guide-step"><div class="step-num">2</div><div class="step-body"><h4>Get the form response details</h4><p>Add action: <code>Get response details</code> (Microsoft Forms). Set Form ID → select your GCS Activity Log form. Set Response ID → use the dynamic value from the trigger.</p></div></div>
+      <div class="guide-step"><div class="step-num">3</div><div class="step-body"><h4>Look up the item in Microsoft Lists</h4><p>Add action: <code>Get items</code> (SharePoint). Set Site Address → your SharePoint. Set List Name → <code>GCS Wine Room Inventory</code>. Add Filter Query: <code>Title eq '@{outputs('Get_response_details')?['body/r_ItemID']}'</code> — replace the field name with your actual Form field ID for SKU.</p></div></div>
+      <div class="guide-step"><div class="step-num">4</div><div class="step-body"><h4>Update the quantity with a condition</h4>
+        <p>Add a <code>Condition</code> action. Check if Action field equals <code>Check-Out</code>:</p>
+        <ul>
+          <li><strong>If yes (Check-Out):</strong> <code>Update item</code> → set Quantity to <code>Current Quantity - Form Quantity</code></li>
+          <li><strong>If no (Check-In/Audit):</strong> Add another condition or directly update as appropriate</li>
+        </ul>
+        <p style="margin-top:8px">Also update <code>LastActivity</code> = <code>utcNow()</code>, <code>LastAction</code> = form Action value, <code>LastStaff</code> = form Staff Name.</p>
+      </div></div>
+      <div class="guide-step"><div class="step-num">5</div><div class="step-body"><h4>(Optional) Send confirmation notification</h4><p>Add action: <code>Send a mobile notification</code> or <code>Post message in Teams channel</code> with a summary: <em>"✅ [Staff] checked out 2 bottles of [Wine] from Shelf [X]"</em>.</p></div></div>
+      <div class="guide-step"><div class="step-num">6</div><div class="step-body"><h4>(Optional) Low-stock alert</h4><p>After updating quantity, add a condition: if <code>New Quantity is less than 2</code> → send an email/Teams alert: <em>"⚠️ Low Stock: [Wine] — only [N] bottles remaining."</em></p></div></div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Step 4 · Generate & Print QR Labels</h3>
+      <div class="guide-step"><div class="step-num">1</div><div class="step-body"><h4>Use the Label Generator tab</h4><p>Switch to the <strong>QR Label Generator</strong> tab. Search or filter by shelf. Select individual items or click <strong>Select All Visible</strong> to batch-select a shelf's worth of wines.</p></div></div>
+      <div class="guide-step"><div class="step-num">2</div><div class="step-body"><h4>Print labels</h4><p>Click <strong>Print QR Labels</strong>. A preview appears showing each label with the wine name, SKU, vintage, and shelf. Click Print — the labels are sized for standard Avery label sheets or can be cut from regular paper.</p></div></div>
+      <div class="guide-step"><div class="step-num">3</div><div class="step-body"><h4>Attach to shelves</h4><p>Print and laminate, or use adhesive label paper. Attach to the front edge of each shelf slot next to the wine. One QR code per SKU is ideal — if the same wine appears on multiple shelves, print one label per shelf location.</p></div></div>
+    </div>
+
+    <div class="guide-section">
+      <h3>Tips & Best Practices</h3>
+      <div class="guide-step"><div class="step-num">💡</div><div class="step-body"><h4>QR Code URL format</h4><p>Your QR codes encode: <code style="word-break:break-all; font-size:10px">https://forms.cloud.microsoft/…?id=…&r329dcc…={SKU}</code>. The actual SKU is substituted for each label — no <code>{{ITEMID}}</code> placeholder remains in the printed QRs.</p></div></div>
+      <div class="guide-step"><div class="step-num">💡</div><div class="step-body"><h4>No login required for forms</h4><p>Make sure your form is set to accept responses from <strong>anyone</strong> (not just organization members) if staff use personal phones. In Forms settings → toggle off "Only people in my organization can respond."</p></div></div>
+      <div class="guide-step"><div class="step-num">💡</div><div class="step-body"><h4>Periodic full audits</h4><p>Use the <strong>Audit</strong> action in the form to do shelf-by-shelf bottle counts. Build a separate Power Automate flow that replaces the Quantity value (instead of incrementing/decrementing) when Action = Audit.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT MODAL -->
+<div class="modal-overlay" id="printModal">
+  <div class="modal">
+    <h3>Print QR Labels</h3>
+    <p id="modalDesc">Generating labels for selected wines…</p>
+    <div class="label-preview" id="labelPreview"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closePrintModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="doPrint()">🖨 Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- HIDDEN PRINT AREA -->
+<div id="print-area"></div>
+
+<script>
+const FORM_BASE = "https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=7kSxZOq4A0WQA-2qq790gia19mZDF7NJjfINiPauqsBUNUFBUkZDUlRNUlMxMDE2VTJPNERNSjY5RC4u&r329dcc1f968543f2b5f9067f1115623c=";
+
+const INVENTORY = [{"SKU": "GCRU7605-15", "WINE": "Champagne A Bergere Millesime Extra Brut", "VINTAGE": "2015", "SHELF": "20", "INVENTORY": 1, "Notes": "", "Cost": 36.15}, {"SKU": "GCRU7613-19", "WINE": "Champagne A Bergere Vignes de Nuits Extra Brut", "VINTAGE": "2019", "SHELF": "20", "INVENTORY": 1, "Notes": "", "Cost": 45.99}, {"SKU": "GCRU7638-20", "WINE": "Champagne A Bergere Origine Brut", "VINTAGE": "NV", "SHELF": "20", "INVENTORY": 1, "Notes": "", "Cost": 107.45}, {"SKU": "GCRU7599-18", "WINE": "Champagne A Bergere Les Peignottes Extra Brut", "VINTAGE": "2018", "SHELF": "20", "INVENTORY": 2, "Notes": "", "Cost": 57.57}, {"SKU": "GCRU7606-22", "WINE": "Champagne A Bergere Brut Rose", "VINTAGE": "NV", "SHELF": "20", "INVENTORY": 1, "Notes": "", "Cost": 24.52}, {"SKU": "GCRU9755-20A", "WINE": "Champagne Dhondt Grellet Extra Brut Dans un Premier Temps Damaged Label", "VINTAGE": "NV", "SHELF": "30", "INVENTORY": 1, "Notes": "", "Cost": 34.63}, {"SKU": "GCRU9755-20", "WINE": "Champagne Dhondt Grellet Extra Brut Dans un Premier Temps", "VINTAGE": "NV", "SHELF": "30", "INVENTORY": 2, "Notes": "", "Cost": 37.0}, {"SKU": "GCRU100102-22", "WINE": "Champagne Dhondt Grellet Roc Solare", "VINTAGE": "NV", "SHELF": "30", "INVENTORY": 1, "Notes": "", "Cost": 36.6}, {"SKU": "GCRU1515-21", "WINE": "Champagne JM Seleque Solessence", "VINTAGE": "NV", "SHELF": "50", "INVENTORY": 5, "Notes": "", "Cost": 26.38}, {"SKU": "GCRU1522-21", "WINE": "Champagne JM Seleque Solessence Rose", "VINTAGE": "NV", "SHELF": "50", "INVENTORY": 1, "Notes": "", "Cost": 30.74}, {"SKU": "GCRU1523-23", "WINE": "Champagne JM Seleque Ratafia", "VINTAGE": "NV", "SHELF": "50", "INVENTORY": 1, "Notes": "", "Cost": 21.27}, {"SKU": "GCRU4406-20", "WINE": "Champagne Michel Gonet Blanc de Blancs Les 3 Terroirs", "VINTAGE": "2020", "SHELF": "60", "INVENTORY": 1, "Notes": "", "Cost": 23.93}, {"SKU": "GCRU4405", "WINE": "Champagne Michel Gonet Mina Grand Cru Mesnil Sur Oger", "VINTAGE": "2010", "SHELF": "60", "INVENTORY": 1, "Notes": "", "Cost": 23.92}, {"SKU": "GCRU4206-23", "WINE": "Arnaud Lambert Cremant de Loire Rose", "VINTAGE": "NV", "SHELF": "70", "INVENTORY": 2, "Notes": "", "Cost": 10.47}, {"SKU": "GCRU80011-18", "WINE": "Parigot & Richard Cremant de Bourgogne Rose Monochrome", "VINTAGE": "NV", "SHELF": "70", "INVENTORY": 8, "Notes": "", "Cost": 14.25}, {"SKU": "GCRU5050-20", "WINE": "Domaine Lesuffleur La Folletiere", "VINTAGE": "2020", "SHELF": "80", "INVENTORY": 4, "Notes": "", "Cost": 12.48}, {"SKU": "GCRU5053-18", "WINE": "Domaine Lesuffleur Missus", "VINTAGE": "2018", "SHELF": "80", "INVENTORY": 6, "Notes": "", "Cost": 31.61}, {"SKU": "GCRU5052-20", "WINE": "Domaine Lesuffleur Cerqueux", "VINTAGE": "2020", "SHELF": "80", "INVENTORY": 1, "Notes": "", "Cost": 1.62}, {"SKU": "GCRU5051-19", "WINE": "Domaine Lesuffleur Friardel", "VINTAGE": "2019", "SHELF": "80", "INVENTORY": 1, "Notes": "", "Cost": 19.81}, {"SKU": "GCRU7002", "WINE": "Domaine de la Reniere Uru-Anna Rose Brut Nature", "VINTAGE": "NV", "SHELF": "80", "INVENTORY": 1, "Notes": "", "Cost": 13.3}, {"SKU": "GCRU800820-19", "WINE": "Eva Fricke Pinot Noir Rose Sekt Brut Nature", "VINTAGE": "2019", "SHELF": "90", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU800813-24", "WINE": "Eva Fricke Riesling Kiedrich", "VINTAGE": "2024", "SHELF": "90", "INVENTORY": 3, "Notes": "", "Cost": 20.15}, {"SKU": "GCRU800817-24", "WINE": "Eva Fricke Riesling Lorcher Krone", "VINTAGE": "2024", "SHELF": "90", "INVENTORY": 2, "Notes": "", "Cost": 65.02}, {"SKU": "GCRU800817-23", "WINE": "Eva Fricke Riesling Lorcher Krone", "VINTAGE": "2023", "SHELF": "90", "INVENTORY": 1, "Notes": "", "Cost": 61.44}, {"SKU": "GCRU800813-23", "WINE": "Eva Fricke Riesling Kiedrich", "VINTAGE": "2023", "SHELF": "100", "INVENTORY": 1, "Notes": "", "Cost": 17.15}, {"SKU": "GCRU800812-24", "WINE": "Eva Fricke Riesling Verde", "VINTAGE": "2024", "SHELF": "100", "INVENTORY": 2, "Notes": "", "Cost": 14.14}, {"SKU": "GCRU800811-24", "WINE": "Eva Fricke Riesling Rheingau", "VINTAGE": "2024", "SHELF": "100", "INVENTORY": 2, "Notes": "", "Cost": 14.15}, {"SKU": "GCRU800818-23", "WINE": "Eva Fricke Riesling Lorcher Schlossberg", "VINTAGE": "2023", "SHELF": "100", "INVENTORY": 1, "Notes": "", "Cost": 38.26}, {"SKU": "GCRU800815-23", "WINE": "Eva Fricke Riesling Melange", "VINTAGE": "2023", "SHELF": "100", "INVENTORY": 1, "Notes": "", "Cost": 27.13}, {"SKU": "GCRU8082-22", "WINE": "Jager Gelber Muskateller Federspiel", "VINTAGE": "2022", "SHELF": "110", "INVENTORY": 2, "Notes": "", "Cost": 16.05}, {"SKU": "GCRU907055-24", "WINE": "Jager Gruner Veltliner Steinfeder", "VINTAGE": "2024", "SHELF": "110", "INVENTORY": 10, "Notes": "", "Cost": 6.84}, {"SKU": "GCRU8080-23", "WINE": "Jager Riesling Federspiel Steinriegl", "VINTAGE": "2023", "SHELF": "110", "INVENTORY": 1, "Notes": "", "Cost": 11.81}, {"SKU": "GCRU907055-24", "WINE": "Jager Gruner Veltliner Steinfeder", "VINTAGE": "2024", "SHELF": "120", "INVENTORY": 2, "Notes": "", "Cost": 6.84}, {"SKU": "GCRU5344-24", "WINE": "Mitja Sirk Bianco", "VINTAGE": "2024", "SHELF": "130", "INVENTORY": 4, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU4714", "WINE": "Sorro Prosecco Treviso DOC Brut", "VINTAGE": "NV", "SHELF": "210", "INVENTORY": 2, "Notes": "", "Cost": 8.74}, {"SKU": "GCRU976-21", "WINE": "Borgo del Tiglio Sauvignon Dark Label", "VINTAGE": "2021", "SHELF": "220", "INVENTORY": 2, "Notes": "", "Cost": 27.63}, {"SKU": "GCRU907360-20", "WINE": "Borgo del Tiglio Friulano", "VINTAGE": "2020", "SHELF": "220", "INVENTORY": 2, "Notes": "", "Cost": 19.51}, {"SKU": "GCRU3720-23", "WINE": "Via Alpina Pinot Grigio", "VINTAGE": "2023", "SHELF": "230", "INVENTORY": 2, "Notes": "", "Cost": 7.36}, {"SKU": "GCRU3722-23", "WINE": "Via Alpina Sauvignon Giulietta", "VINTAGE": "2023", "SHELF": "230", "INVENTORY": 2, "Notes": "", "Cost": 10.79}, {"SKU": "GCRU3721-24", "WINE": "Via Alpina Sauvignon Blanc", "VINTAGE": "2024", "SHELF": "230", "INVENTORY": 1, "Notes": "", "Cost": 8.03}, {"SKU": "GCRU3723-24", "WINE": "Via Alpina Ribolla Gialla", "VINTAGE": "2024", "SHELF": "230", "INVENTORY": 1, "Notes": "", "Cost": 7.82}, {"SKU": "GCRU230101-21", "WINE": "Dalia Maris R Bianco", "VINTAGE": "2021", "SHELF": "230", "INVENTORY": 1, "Notes": "", "Cost": 30.91}, {"SKU": "GCRU9070-24", "WINE": "Venica & Venica Malvasia", "VINTAGE": "2024", "SHELF": "240", "INVENTORY": 1, "Notes": "", "Cost": 17.29}, {"SKU": "GCRU3560-NV", "WINE": "Poderi Colla Bonme Vermouth", "VINTAGE": "NV", "SHELF": "240", "INVENTORY": 2, "Notes": "", "Cost": 18.8}, {"SKU": "GCRU3256-20", "WINE": "Poderi Colla Barbaresco Roncaglie", "VINTAGE": "2020", "SHELF": "240", "INVENTORY": 2, "Notes": "", "Cost": 27.48}, {"SKU": "GCRU3259-24", "WINE": "Poderi Colla Dolcetto d`Alba Pian Balbo", "VINTAGE": "2024", "SHELF": "240", "INVENTORY": 3, "Notes": "", "Cost": 8.46}, {"SKU": "GCRU3255-20", "WINE": "Poderi Colla Barolo Bussia", "VINTAGE": "2020", "SHELF": "240", "INVENTORY": 1, "Notes": "", "Cost": 31.56}, {"SKU": "GCRU9065-24", "WINE": "Venica & Venica Pinot Grigio Jesera", "VINTAGE": "2024", "SHELF": "250", "INVENTORY": 1, "Notes": "", "Cost": 12.45}, {"SKU": "GCRU9065-23", "WINE": "Venica & Venica Pinot Grigio Jesera", "VINTAGE": "2023", "SHELF": "250", "INVENTORY": 1, "Notes": "", "Cost": 13.4}, {"SKU": "GCRU9070-23", "WINE": "Venica & Venica Malvasia", "VINTAGE": "2023", "SHELF": "250", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU9070-24", "WINE": "Venica & Venica Malvasia", "VINTAGE": "2024", "SHELF": "250", "INVENTORY": 1, "Notes": "", "Cost": 17.29}, {"SKU": "GCRU9080-24", "WINE": "Venica & Venica Sauvignon Ronco delle Mele", "VINTAGE": "2024", "SHELF": "250", "INVENTORY": 1, "Notes": "", "Cost": 33.76}, {"SKU": "GCRU8300-23", "WINE": "Vinogradi Marko Fon Malvazija", "VINTAGE": "2023", "SHELF": "260", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU8302-23", "WINE": "Vinogradi Marko Fon Vitovska", "VINTAGE": "2023", "SHELF": "260", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU907380-24", "WINE": "Cascina Fontana Dolcetto d`Alba", "VINTAGE": "2024", "SHELF": "270", "INVENTORY": 2, "Notes": "", "Cost": 9.89}, {"SKU": "GCRU9366-20", "WINE": "Cascina Fontana Barolo del Comune di Castiglione Falletto", "VINTAGE": "2020", "SHELF": "270", "INVENTORY": 0, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU907382-23", "WINE": "Cascina Fontana Barbera d`Alba", "VINTAGE": "2023", "SHELF": "270", "INVENTORY": 1, "Notes": "", "Cost": 13.42}, {"SKU": "GCRU907390-20", "WINE": "Cascina Fontana Barolo", "VINTAGE": "2020", "SHELF": "280", "INVENTORY": 3, "Notes": "", "Cost": 39.17}, {"SKU": "GCRU907385-23", "WINE": "Cascina Fontana Langhe Nebbiolo", "VINTAGE": "2023", "SHELF": "280", "INVENTORY": 3, "Notes": "", "Cost": 16.01}, {"SKU": "GCRU9366-20", "WINE": "Cascina Fontana Barolo del Comune di Castiglione Falletto", "VINTAGE": "2020", "SHELF": "280", "INVENTORY": 1, "Notes": "", "Cost": 51.22}, {"SKU": "GCRU9366-21", "WINE": "Cascina Fontana Barolo del Comune di Castiglione Falletto", "VINTAGE": "2021", "SHELF": "280", "INVENTORY": 2, "Notes": "", "Cost": 53.67}, {"SKU": "GCRU607009-21", "WINE": "Piero Busso Barbaresco Gallina", "VINTAGE": "2021", "SHELF": "290", "INVENTORY": 3, "Notes": "", "Cost": 57.73}, {"SKU": "GCRU607009-20", "WINE": "Piero Busso Barbaresco Gallina", "VINTAGE": "2020", "SHELF": "290", "INVENTORY": 1, "Notes": "", "Cost": 53.05}, {"SKU": "GCRU607001-23", "WINE": "Piero Busso Barbera d`Alba Majano", "VINTAGE": "2023", "SHELF": "290", "INVENTORY": 3, "Notes": "", "Cost": 14.19}, {"SKU": "GCRU607001-22", "WINE": "Piero Busso Barbera d`Alba Majano", "VINTAGE": "2022", "SHELF": "290", "INVENTORY": 3, "Notes": "", "Cost": 12.36}, {"SKU": "GCRU607003-22", "WINE": "Piero Busso Barbaresco Albesani", "VINTAGE": "2022", "SHELF": "290", "INVENTORY": 1, "Notes": "", "Cost": 43.61}, {"SKU": "GCRU607012-22", "WINE": "Piero Busso Barbaresco Mondino", "VINTAGE": "2022", "SHELF": "300", "INVENTORY": 3, "Notes": "", "Cost": 30.08}, {"SKU": "GCRU607002-24", "WINE": "Piero Busso Langhe Nebbiolo", "VINTAGE": "2024", "SHELF": "300", "INVENTORY": 3, "Notes": "", "Cost": 16.54}, {"SKU": "GCRU607003-22", "WINE": "Piero Busso Barbaresco Albesani", "VINTAGE": "2022", "SHELF": "300", "INVENTORY": 2, "Notes": "", "Cost": 43.61}, {"SKU": "GCRU607007-22", "WINE": "Piero Busso Barbaresco San Stunet", "VINTAGE": "2022", "SHELF": "300", "INVENTORY": 3, "Notes": "", "Cost": 43.61}, {"SKU": "GCRU607002-23", "WINE": "Piero Busso Langhe Nebbiolo", "VINTAGE": "2023", "SHELF": "310", "INVENTORY": 2, "Notes": "", "Cost": 14.62}, {"SKU": "GCRU607002-24", "WINE": "Piero Busso Langhe Nebbiolo", "VINTAGE": "2024", "SHELF": "310", "INVENTORY": 2, "Notes": "", "Cost": 16.54}, {"SKU": "GCRU9206-21", "WINE": "Riecine La Gioia Toscana Rosso", "VINTAGE": "2021", "SHELF": "320", "INVENTORY": 1, "Notes": "", "Cost": 33.65}, {"SKU": "GCRU5304-19", "WINE": "Monteraponi Toscana Rosso Baron`Ugo", "VINTAGE": "2019", "SHELF": "320", "INVENTORY": 1, "Notes": "", "Cost": 40.37}, {"SKU": "GCRU5230-22", "WINE": "Monteraponi Chianti Classico", "VINTAGE": "2022", "SHELF": "330", "INVENTORY": 1, "Notes": "", "Cost": 14.3}, {"SKU": "GCRU5302-21", "WINE": "Monteraponi Chianti Classico Riserva Il Campitello", "VINTAGE": "2021", "SHELF": "330", "INVENTORY": 2, "Notes": "", "Cost": 38.82}, {"SKU": "GCRU100164-20", "WINE": "Monteraponi Bragantino Gran Selezione", "VINTAGE": "2020", "SHELF": "330", "INVENTORY": 2, "Notes": "", "Cost": 121.44}, {"SKU": "GCRU5230-23", "WINE": "Monteraponi Chianti Classico", "VINTAGE": "2023", "SHELF": "330", "INVENTORY": 2, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU906660-17", "WINE": "Paradiso di Manfredi Brunello di Montalcino", "VINTAGE": "2017", "SHELF": "340", "INVENTORY": 3, "Notes": "", "Cost": 65.08}, {"SKU": "GCRU5700-19", "WINE": "Padelletti Brunello di Montalcino", "VINTAGE": "2019", "SHELF": "340", "INVENTORY": 3, "Notes": "", "Cost": 30.82}, {"SKU": "GCRU5702-19", "WINE": "Padelletti Brunello di Montalcino Riserva", "VINTAGE": "2019", "SHELF": "340", "INVENTORY": 1, "Notes": "", "Cost": 55.38}, {"SKU": "GCRU906655-23", "WINE": "Paradiso di Manfredi Rosso di Montalcino", "VINTAGE": "2023", "SHELF": "340", "INVENTORY": 1, "Notes": "", "Cost": 23.04}, {"SKU": "GCRU906660-17", "WINE": "Paradiso di Manfredi Brunello di Montalcino", "VINTAGE": "2017", "SHELF": "340", "INVENTORY": 2, "Notes": "", "Cost": 65.08}, {"SKU": "GCRU906660-18", "WINE": "Paradiso di Manfredi Brunello di Montalcino", "VINTAGE": "2018", "SHELF": "340", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU9774-24", "WINE": "Fattoria di Sammontana Alberese Rosso Toscana IGT", "VINTAGE": "2024", "SHELF": "350", "INVENTORY": 1, "Notes": "", "Cost": 7.34}, {"SKU": "GCRU907403-23", "WINE": "Fattoria di Sammontana Prunecchio Bianco Toscano", "VINTAGE": "2023", "SHELF": "350", "INVENTORY": 1, "Notes": "", "Cost": 8.67}, {"SKU": "GCRU6117-21", "WINE": "Girolamo Russo San Lorenzo Piano delle Colombe", "VINTAGE": "2021", "SHELF": "360", "INVENTORY": 1, "Notes": "", "Cost": 83.69}, {"SKU": "GCRU7702-22", "WINE": "Eolia Bianco V", "VINTAGE": "2022", "SHELF": "360", "INVENTORY": 1, "Notes": "", "Cost": 33.01}, {"SKU": "GCRU9856-22", "WINE": "Marco Tinessa Ognostro Rosso", "VINTAGE": "2022", "SHELF": "370", "INVENTORY": 1, "Notes": "", "Cost": 20.9}, {"SKU": "GCRU9856-21", "WINE": "Marco Tinessa Ognostro Rosso", "VINTAGE": "2021", "SHELF": "370", "INVENTORY": 1, "Notes": "", "Cost": 21.56}, {"SKU": "GCRU107101-21", "WINE": "Dominio del Challao Challao Garnacha", "VINTAGE": "2021", "SHELF": "380", "INVENTORY": 3, "Notes": "", "Cost": 29.21}, {"SKU": "GCRU107101-22", "WINE": "Dominio del Challao Challao Garnacha", "VINTAGE": "2022", "SHELF": "390", "INVENTORY": 4, "Notes": "", "Cost": 29.12}, {"SKU": "S-GCRU107102-22", "WINE": "Dominio del Challao Challao Samples", "VINTAGE": "2022", "SHELF": "390", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1142", "WINE": "Adega Damm Amandi Seoane", "VINTAGE": "2019", "SHELF": "390", "INVENTORY": 1, "Notes": "", "Cost": 19.19}, {"SKU": "GCRU1143", "WINE": "Adega Damm Amandi Seoane Baja", "VINTAGE": "2019", "SHELF": "390", "INVENTORY": 1, "Notes": "", "Cost": 21.18}, {"SKU": "GCRU1155", "WINE": "Adega Damm Amandi Vino Tinto", "VINTAGE": "2019", "SHELF": "390", "INVENTORY": 1, "Notes": "", "Cost": 12.11}, {"SKU": "GCRU2233", "WINE": "Railsback Freres Syrah Bien Nacido Sans Soufre", "VINTAGE": "2018", "SHELF": "410", "INVENTORY": 2, "Notes": "", "Cost": 20.99}, {"SKU": "GCRU2235", "WINE": "Railsback Freres Rouge", "VINTAGE": "2017", "SHELF": "410", "INVENTORY": 2, "Notes": "", "Cost": 15.04}, {"SKU": "GCRU2223", "WINE": "Railsback Freres Syrah Bien Nacido", "VINTAGE": "2020", "SHELF": "420", "INVENTORY": 3, "Notes": "", "Cost": 23.49}, {"SKU": "GCRU2223-21", "WINE": "Railsback Freres Syrah Bien Nacido", "VINTAGE": "2021", "SHELF": "420", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU2256-21", "WINE": "Railsback Freres Syrah Bien Nacido Z Block", "VINTAGE": "2021", "SHELF": "430", "INVENTORY": 4, "Notes": "", "Cost": 23.45}, {"SKU": "GCRU2220", "WINE": "Railsback Freres Grenache Noir", "VINTAGE": "2020", "SHELF": "430", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU330-21", "WINE": "Roman Ceremony Cabernet Sauvignon", "VINTAGE": "2021", "SHELF": "430", "INVENTORY": 5, "Notes": "", "Cost": 10.49}, {"SKU": "GCRU4671-23", "WINE": "Presqu'ile Gamay Nouveau", "VINTAGE": "2023", "SHELF": "440", "INVENTORY": 1, "Notes": "", "Cost": 10.83}, {"SKU": "GCRU4659-22", "WINE": "Presqu'ile Syrah SBC", "VINTAGE": "2022", "SHELF": "440", "INVENTORY": 4, "Notes": "", "Cost": 11.74}, {"SKU": "GCRU4673-23", "WINE": "Presqu'ile Pinot Noir Altamarea", "VINTAGE": "2023", "SHELF": "440", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU4670-23", "WINE": "Presqu'ile Sauvignon Blanc", "VINTAGE": "2023", "SHELF": "450", "INVENTORY": 2, "Notes": "", "Cost": 9.8}, {"SKU": "GCRU4650-23", "WINE": "Presqu'ile Chardonnay SBC", "VINTAGE": "2023", "SHELF": "450", "INVENTORY": 4, "Notes": "", "Cost": 10.85}, {"SKU": "GCRU4655-23", "WINE": "Presqu'ile Chardonnay Presqu'ile Vineyard", "VINTAGE": "2023", "SHELF": "450", "INVENTORY": 1, "Notes": "", "Cost": 21.04}, {"SKU": "GCRU10980-21", "WINE": "Presqu'ile Chardonnay Sanford & Benedict", "VINTAGE": "2021", "SHELF": "450", "INVENTORY": 1, "Notes": "", "Cost": 25.32}, {"SKU": "GCRU4641-20", "WINE": "Presqu'ile Syrah Presqu'ile Vineyard", "VINTAGE": "2020", "SHELF": "460", "INVENTORY": 2, "Notes": "", "Cost": 21.14}, {"SKU": "GCRU4657-23", "WINE": "Presqu'ile Pinot Noir Presqu'ile Vineyard", "VINTAGE": "2023", "SHELF": "460", "INVENTORY": 1, "Notes": "", "Cost": 27.41}, {"SKU": "GCRU4652-23", "WINE": "Presqu'ile Pinot Noir SBC", "VINTAGE": "2023", "SHELF": "460", "INVENTORY": 1, "Notes": "", "Cost": 11.5}, {"SKU": "GCRU421-22", "WINE": "Newfound Gravels California Red Wine", "VINTAGE": "2022", "SHELF": "490", "INVENTORY": 3, "Notes": "", "Cost": 6.04}, {"SKU": "GCRU421-20", "WINE": "Newfound Gravels California Red Wine", "VINTAGE": "2020", "SHELF": "490", "INVENTORY": 2, "Notes": "", "Cost": 0.72}, {"SKU": "GCRU5111-22", "WINE": "Enfield Wine Co Stained Glass Grenache", "VINTAGE": "2022", "SHELF": "510", "INVENTORY": 2, "Notes": "", "Cost": 13.24}, {"SKU": "GCRU5161-21", "WINE": "Colete White Blend Napa Valley", "VINTAGE": "2021", "SHELF": "520", "INVENTORY": 2, "Notes": "", "Cost": 8.9}, {"SKU": "GCRU5160-23", "WINE": "Colete Merlot Napa Valley", "VINTAGE": "2023", "SHELF": "520", "INVENTORY": 3, "Notes": "", "Cost": 29.17}, {"SKU": "GCRU90817-23", "WINE": "Walter Scott Pinot Noir La Combe Verte", "VINTAGE": "2023", "SHELF": "530", "INVENTORY": 1, "Notes": "", "Cost": 17.89}, {"SKU": "GCRU90565-24", "WINE": "Chacra Pinot Noir Cincuenta y Cinco", "VINTAGE": "2024", "SHELF": "540", "INVENTORY": 1, "Notes": "", "Cost": 22.03}, {"SKU": "GCRU90570-23", "WINE": "Chacra Pinot Noir Treinta y Dos", "VINTAGE": "2023", "SHELF": "540", "INVENTORY": 1, "Notes": "", "Cost": 56.88}, {"SKU": "GCRU90570-21", "WINE": "Chacra Pinot Noir Treinta y Dos", "VINTAGE": "2021", "SHELF": "540", "INVENTORY": 1, "Notes": "", "Cost": 54.87}, {"SKU": "GCRU90570-22", "WINE": "Chacra Pinot Noir Treinta y Dos", "VINTAGE": "2022", "SHELF": "540", "INVENTORY": 1, "Notes": "", "Cost": 56.39}, {"SKU": "GCRU90589-24", "WINE": "Chacra Roka Malbec", "VINTAGE": "2024", "SHELF": "540", "INVENTORY": 3, "Notes": "", "Cost": 28.02}, {"SKU": "GCRU100202-21", "WINE": "Irrewarra Pinot Noir", "VINTAGE": "2021", "SHELF": "550", "INVENTORY": 3, "Notes": "", "Cost": 31.56}, {"SKU": "GCRU1033", "WINE": "Bassi Syrah", "VINTAGE": "2021", "SHELF": "560", "INVENTORY": 5, "Notes": "", "Cost": 31.58}, {"SKU": "GCRU1033-22", "WINE": "Bassi Syrah", "VINTAGE": "2022", "SHELF": "560", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1070-21", "WINE": "Phelan Farm Pinot Noir", "VINTAGE": "2021", "SHELF": "560", "INVENTORY": 1, "Notes": "", "Cost": 34.06}, {"SKU": "GCRU1061-23", "WINE": "Brij Wines Oso Rouge Mourvedre and Grenache", "VINTAGE": "2023", "SHELF": "570", "INVENTORY": 2, "Notes": "", "Cost": 15.77}, {"SKU": "GCRU1030", "WINE": "Phelan Farm Nithya", "VINTAGE": "2021", "SHELF": "570", "INVENTORY": 1, "Notes": "", "Cost": 23.61}, {"SKU": "GCRU1057", "WINE": "Phelan Farm Autrement", "VINTAGE": "2021", "SHELF": "570", "INVENTORY": 1, "Notes": "", "Cost": 23.61}, {"SKU": "GCRU1057-22", "WINE": "Phelan Farm Autrement", "VINTAGE": "2022", "SHELF": "570", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU800111-19", "WINE": "Chateau Grand Village Blanc Lafleur", "VINTAGE": "2019", "SHELF": "610", "INVENTORY": 3, "Notes": "", "Cost": 38.33}, {"SKU": "GCRU7641-21", "WINE": "Fico Wines Toscana Sangiovese Per Filo", "VINTAGE": "2021", "SHELF": "610", "INVENTORY": 1, "Notes": "", "Cost": 36.73}, {"SKU": "GCRU800118-14", "WINE": "Chateau Lafleur Les Pensees de Lafleur", "VINTAGE": "2014", "SHELF": "610", "INVENTORY": 2, "Notes": "", "Cost": 78.0}, {"SKU": "GCRU800114-18", "WINE": "Chateau Grand Village Rouge Lafleur", "VINTAGE": "2018", "SHELF": "610", "INVENTORY": 2, "Notes": "", "Cost": 10.3}, {"SKU": "GCRU800116-22", "WINE": "Chateau Lafleur Les Perrieres", "VINTAGE": "2022", "SHELF": "620", "INVENTORY": 1, "Notes": "", "Cost": 43.86}, {"SKU": "GCRU340010-20", "WINE": "Domaine de Galouchey Le Galouchey", "VINTAGE": "2020", "SHELF": "620", "INVENTORY": 1, "Notes": "", "Cost": 15.4}, {"SKU": "GCRU102300-22", "WINE": "Baraveou Bandol Rouge", "VINTAGE": "2022", "SHELF": "630", "INVENTORY": 1, "Notes": "", "Cost": 29.89}, {"SKU": "GCRU102300-23", "WINE": "Baraveou Bandol Rouge", "VINTAGE": "2023", "SHELF": "630", "INVENTORY": 1, "Notes": "", "Cost": 30.91}, {"SKU": "GCRU883-21", "WINE": "by Farr Farrside", "VINTAGE": "2021", "SHELF": "650", "INVENTORY": 1, "Notes": "", "Cost": 41.36}, {"SKU": "GCRU514-21", "WINE": "Jerome Bretaudeau Pinot Noir Statera", "VINTAGE": "2021", "SHELF": "820", "INVENTORY": 2, "Notes": "", "Cost": 53.21}, {"SKU": "GCRU513-22", "WINE": "Jerome Bretaudeau Merlot Ornate", "VINTAGE": "2022", "SHELF": "820", "INVENTORY": 1, "Notes": "", "Cost": 25.66}, {"SKU": "GCRU100213-23", "WINE": "Jerome Bretaudeau Muscadet Theia", "VINTAGE": "2023", "SHELF": "820", "INVENTORY": 1, "Notes": "", "Cost": 16.58}, {"SKU": "GCRU2504-19", "WINE": "Domaine Andree Les Mines", "VINTAGE": "2019", "SHELF": "820", "INVENTORY": 1, "Notes": "", "Cost": 30.78}, {"SKU": "GCRU4762-23", "WINE": "Chateau de Bonnezeaux La Montagne", "VINTAGE": "2023", "SHELF": "820", "INVENTORY": 1, "Notes": "", "Cost": 22.11}, {"SKU": "GCRU4212-23", "WINE": "Arnaud Lambert Saumur Blanc Breze Midi", "VINTAGE": "2023", "SHELF": "830", "INVENTORY": 1, "Notes": "", "Cost": 11.26}, {"SKU": "GCRU2502-19", "WINE": "Domaine Andree Carbone", "VINTAGE": "2019", "SHELF": "830", "INVENTORY": 3, "Notes": "", "Cost": 20.9}, {"SKU": "GCRU2500-19", "WINE": "Domaine Andree l`Envolee", "VINTAGE": "2019", "SHELF": "830", "INVENTORY": 1, "Notes": "", "Cost": 15.43}, {"SKU": "GCRU3623-19", "WINE": "Brendan Stater West Saumur Rouge Val de Loire", "VINTAGE": "2019", "SHELF": "840", "INVENTORY": 2, "Notes": "", "Cost": 15.08}, {"SKU": "GCRU3623-21", "WINE": "Brendan Stater West Saumur Rouge Val de Loire", "VINTAGE": "2021", "SHELF": "840", "INVENTORY": 1, "Notes": "", "Cost": 11.57}, {"SKU": "GCRU3623-22", "WINE": "Brendan Stater West Saumur Rouge Val de Loire", "VINTAGE": "2022", "SHELF": "840", "INVENTORY": 1, "Notes": "", "Cost": 11.41}, {"SKU": "GCRU3623-23", "WINE": "Brendan Stater West Saumur Rouge Val de Loire", "VINTAGE": "2023", "SHELF": "840", "INVENTORY": 2, "Notes": "", "Cost": 11.24}, {"SKU": "GCRU3625-20", "WINE": "Brendan Stater West Saumur Rouge la Ripaille", "VINTAGE": "2020", "SHELF": "840", "INVENTORY": 2, "Notes": "", "Cost": 20.2}, {"SKU": "GCRU3625-22", "WINE": "Brendan Stater West Saumur Rouge la Ripaille", "VINTAGE": "2022", "SHELF": "840", "INVENTORY": 2, "Notes": "", "Cost": 19.06}, {"SKU": "GCRU3623-20", "WINE": "Brendan Stater West Saumur Rouge Val de Loire", "VINTAGE": "2020", "SHELF": "840", "INVENTORY": 1, "Notes": "", "Cost": 12.61}, {"SKU": "GCRU107003-20", "WINE": "Domaine de la Reniere Saumur Blanc Coulee d`Arthenay", "VINTAGE": "2020", "SHELF": "850", "INVENTORY": 1, "Notes": "", "Cost": 18.45}, {"SKU": "GCRU7006-22", "WINE": "Domaine de la Reniere La Reniere Saumur Rouge", "VINTAGE": "2022", "SHELF": "850", "INVENTORY": 3, "Notes": "", "Cost": 10.3}, {"SKU": "GCRU7004-22", "WINE": "Domaine de la Reniere La Cerisaie Saumur Blanc", "VINTAGE": "2022", "SHELF": "850", "INVENTORY": 2, "Notes": "", "Cost": 12.37}, {"SKU": "GCRU4294-19", "WINE": "Domaine Le Petit Saint Vincent Saumur Champigny Les Clos Lyzieres", "VINTAGE": "2019", "SHELF": "850", "INVENTORY": 1, "Notes": "", "Cost": 11.86}, {"SKU": "GCRU1428-20", "WINE": "Domaine Le Petit Saint Vincent Saumur Champigny Pelo", "VINTAGE": "2020", "SHELF": "850", "INVENTORY": 2, "Notes": "", "Cost": 11.14}, {"SKU": "GCRU4292-22", "WINE": "Domaine Le Petit Saint Vincent Saumur Champigny Le Petit St Vincent", "VINTAGE": "2022", "SHELF": "850", "INVENTORY": 0, "Notes": "", "Cost": 8.96}, {"SKU": "GCRU107005-22", "WINE": "Domaine de la Reniere Saumur Rouge Puy-Notre-Dame Moulin Repenti", "VINTAGE": "2022", "SHELF": "850", "INVENTORY": 1, "Notes": "", "Cost": 20.45}, {"SKU": "GCRU5003-21", "WINE": "Siret Courtaud Chateaumeillant Rouge", "VINTAGE": "2021", "SHELF": "860", "INVENTORY": 3, "Notes": "", "Cost": 9.19}, {"SKU": "GCRU5002-22", "WINE": "Siret Courtaud Quincy Cuvee 1959", "VINTAGE": "2022", "SHELF": "860", "INVENTORY": 2, "Notes": "", "Cost": 12.67}, {"SKU": "GCRU5001-22", "WINE": "Siret Courtaud Quincy", "VINTAGE": "2022", "SHELF": "860", "INVENTORY": 1, "Notes": "", "Cost": 9.58}, {"SKU": "GCRU8700-22", "WINE": "Clos des Plantes Poiesis", "VINTAGE": "2022", "SHELF": "860", "INVENTORY": 2, "Notes": "", "Cost": 18.9}, {"SKU": "GCRU100149-23", "WINE": "Jean Baptiste Hardy L'Aubier", "VINTAGE": "2023", "SHELF": "870", "INVENTORY": 1, "Notes": "", "Cost": 12.45}, {"SKU": "GCRU6702-23", "WINE": "Jean Baptiste Hardy Clos de Lozangere", "VINTAGE": "2023", "SHELF": "870", "INVENTORY": 1, "Notes": "", "Cost": 17.04}, {"SKU": "GCRU6703-21", "WINE": "Jean Baptiste Hardy Ponceau Rouge", "VINTAGE": "2021", "SHELF": "870", "INVENTORY": 1, "Notes": "", "Cost": 16.34}, {"SKU": "GCRU100150-23", "WINE": "Jean Baptiste Hardy Eclats", "VINTAGE": "2023", "SHELF": "870", "INVENTORY": 2, "Notes": "", "Cost": 11.76}, {"SKU": "GCRU6700-23", "WINE": "Jean Baptiste Hardy Fief de Chaintre", "VINTAGE": "2023", "SHELF": "870", "INVENTORY": 2, "Notes": "", "Cost": 17.04}, {"SKU": "GCRU4000-23", "WINE": "Vincent Mothe Chablis", "VINTAGE": "2023", "SHELF": "1010", "INVENTORY": 1, "Notes": "", "Cost": 12.22}, {"SKU": "GCRU90860-23", "WINE": "Domaine Eleni & Edouard Vocoret Chablis Bas de Chapelot", "VINTAGE": "2023", "SHELF": "1020", "INVENTORY": 1, "Notes": "", "Cost": 22.22}, {"SKU": "GCRU90870-23", "WINE": "Domaine Eleni & Edouard Vocoret Chablis Forets", "VINTAGE": "2023", "SHELF": "1020", "INVENTORY": 1, "Notes": "", "Cost": 41.24}, {"SKU": "GCRU908622-23", "WINE": "Domaine Eleni & Edouard Vocoret Chablis 1er Cru Butteaux", "VINTAGE": "2023", "SHELF": "1020", "INVENTORY": 0, "Notes": "", "Cost": 38.47}, {"SKU": "GCRU90866-23", "WINE": "Domaine Eleni & Edouard Vocoret Chablis Boucheran", "VINTAGE": "2023", "SHELF": "1020", "INVENTORY": 1, "Notes": "???", "Cost": 22.41}, {"SKU": "GCRU0247-23", "WINE": "Domaine de Cassiopee Maranges Rouge Le Saugeot", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 3, "Notes": "", "Cost": 27.46}, {"SKU": "GCRU202035-23", "WINE": "Domaine de Cassiopee Maranges Blanc Les Plantes", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 1, "Notes": "", "Cost": 60.18}, {"SKU": "GCRU3602-23", "WINE": "Chantereves Bourgogne Chardonnay", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 1, "Notes": "", "Cost": 23.94}, {"SKU": "GCRU3606-23", "WINE": "Chantereves Chassagne Montrachet Blanc 1er Cru les Morgeots", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 1, "Notes": "", "Cost": 90.79}, {"SKU": "GCRU3676-23", "WINE": "Chantereves Bourgogne Rouge Champs Pommiers", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 1, "Notes": "", "Cost": 27.34}, {"SKU": "GCRU3667-23", "WINE": "Chantereves Chorey les Beaune Rouge Champs Longs", "VINTAGE": "2023", "SHELF": "1030", "INVENTORY": 1, "Notes": "", "Cost": 39.71}, {"SKU": "GCRU0234-21", "WINE": "Domaine de Cassiopee Bourgogne Hautes Cote de Beaune Blanc Les Cotes", "VINTAGE": "2021", "SHELF": "1040", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU0247", "WINE": "Domaine de Cassiopee Maranges Rouge Le Saugeot", "VINTAGE": "2021", "SHELF": "1040", "INVENTORY": 1, "Notes": "", "Cost": 25.8}, {"SKU": "GCRU0244-23", "WINE": "Domaine de Cassiopee Maranges Rouge Les Plantes", "VINTAGE": "2023", "SHELF": "1040", "INVENTORY": 3, "Notes": "", "Cost": 30.19}, {"SKU": "GCRU0234-23", "WINE": "Domaine de Cassiopee Bourgogne Hautes Cote de Beaune Blanc Les Cotes", "VINTAGE": "2023", "SHELF": "1040", "INVENTORY": 2, "Notes": "", "Cost": 21.25}, {"SKU": "GCRU0236-23", "WINE": "Domaine de Cassiopee Bourgogne Rouge En Gerlieus", "VINTAGE": "2023", "SHELF": "1040", "INVENTORY": 1, "Notes": "", "Cost": 21.63}, {"SKU": "GCRU0236-22", "WINE": "Domaine de Cassiopee Bourgogne Rouge En Gerlieus", "VINTAGE": "2022", "SHELF": "1040", "INVENTORY": 1, "Notes": "", "Cost": 21.5}, {"SKU": "GCRU5095-22", "WINE": "Domaine Prunier Bonheur Bourgogne Cote D'Or", "VINTAGE": "2022", "SHELF": "1050", "INVENTORY": 1, "Notes": "", "Cost": 17.49}, {"SKU": "GCRU5072-17", "WINE": "Domaine Prunier Bonheur Monthelie Rouge 1er Cru les Vignes Rondes", "VINTAGE": "2017", "SHELF": "1050", "INVENTORY": 1, "Notes": "2016 vintage", "Cost": 0.0}, {"SKU": "GCRU5085-19", "WINE": "Domaine Prunier Bonheur Monthelie Rouge", "VINTAGE": "2019", "SHELF": "1050", "INVENTORY": 1, "Notes": "", "Cost": 20.16}, {"SKU": "GCRU5085-20", "WINE": "Domaine Prunier Bonheur Monthelie Rouge", "VINTAGE": "2020", "SHELF": "1050", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU907018-22", "WINE": "Domaine Olivier Merlin Macon Blanc la Roche Vineuse les Cras", "VINTAGE": "2022", "SHELF": "1050", "INVENTORY": 1, "Notes": "", "Cost": 20.83}, {"SKU": "GCRU4222-22", "WINE": "Simon Bize Bourgogne Blanc Les Perrieres", "VINTAGE": "2022", "SHELF": "1060", "INVENTORY": 1, "Notes": "", "Cost": 27.02}, {"SKU": "GCRU4508-22", "WINE": "Pierre Morey Monthelie Rouge", "VINTAGE": "2022", "SHELF": "1060", "INVENTORY": 2, "Notes": "", "Cost": 29.4}, {"SKU": "GCRU4508-23", "WINE": "Pierre Morey Monthelie Rouge", "VINTAGE": "2023", "SHELF": "1060", "INVENTORY": 1, "Notes": "", "Cost": 34.6}, {"SKU": "GCRU4512-18", "WINE": "Morey Blanc Aloxe Corton 1er Cru Rouge Clos du Chapitre", "VINTAGE": "2018", "SHELF": "1060", "INVENTORY": 1, "Notes": "", "Cost": 57.96}, {"SKU": "GCRU4352-22", "WINE": "Domaine Y Clerget Volnay 1er Cru Santenots", "VINTAGE": "2022", "SHELF": "1060", "INVENTORY": 1, "Notes": "", "Cost": 62.26}, {"SKU": "GCRU2317-22", "WINE": "Domaine Camille Thiriet Clos Vougeot", "VINTAGE": "2022", "SHELF": "1070", "INVENTORY": 2, "Notes": "", "Cost": 360.0}, {"SKU": "GCRU2333-22", "WINE": "Domaine Camille Thiriet Cote de Nuits Monopole La Robignotte", "VINTAGE": "2022", "SHELF": "1070", "INVENTORY": 1, "Notes": "", "Cost": 70.0}, {"SKU": "GCRU9077-23", "WINE": "Jean Marc Roulot Beaune Teurons", "VINTAGE": "2023", "SHELF": "1070", "INVENTORY": 1, "Notes": "", "Cost": 77.18}, {"SKU": "GCRU4350-22", "WINE": "Domaine Y Clerget Volnay", "VINTAGE": "2022", "SHELF": "1070", "INVENTORY": 1, "Notes": "", "Cost": 32.66}, {"SKU": "GCRU90805-23", "WINE": "Domaine Genot Boulanger Pommard Vieilles Vignes", "VINTAGE": "2023", "SHELF": "1080", "INVENTORY": 2, "Notes": "", "Cost": 38.28}, {"SKU": "GCRU90793-22", "WINE": "Domaine Genot Boulanger Clos de Vougeot Grand Cru", "VINTAGE": "2022", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 159.82}, {"SKU": "GCRU90793A-13", "WINE": "Domaine Genot Boulanger Clos de Vougeot Grand Cru", "VINTAGE": "2013", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 165.92}, {"SKU": "GCRU2441-22", "WINE": "Domaine Genot Boulanger Volnay", "VINTAGE": "2022", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 36.89}, {"SKU": "GCRU2443-22", "WINE": "Domaine Genot Boulanger Volnay 1er Cru Le Ronceret", "VINTAGE": "2022", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 54.57}, {"SKU": "GCRU90882-23", "WINE": "Domaine Genot Boulanger Mercurey Saumonts Cuvee Brooklyn", "VINTAGE": "2023", "SHELF": "1080", "INVENTORY": 2, "Notes": "", "Cost": 20.54}, {"SKU": "GCRU90790-22", "WINE": "Domaine Genot Boulanger Mercurey 1er Cru Sazenay", "VINTAGE": "2022", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 28.27}, {"SKU": "GCRU90790-23", "WINE": "Domaine Genot Boulanger Mercurey 1er Cru Sazenay", "VINTAGE": "2023", "SHELF": "1080", "INVENTORY": 1, "Notes": "", "Cost": 29.39}, {"SKU": "GCRU1413-22", "WINE": "Benjamin Leroux Gevrey Chambertin", "VINTAGE": "2022", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 53.21}, {"SKU": "GCRU1413-23", "WINE": "Benjamin Leroux Gevrey Chambertin", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1406-23", "WINE": "Benjamin Leroux Bourgogne Rouge", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 20.87}, {"SKU": "GCRU100123-22", "WINE": "Benjamin Leroux Volnay 1er Cru Caillerets", "VINTAGE": "2022", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 105.03}, {"SKU": "GCRU100123-23", "WINE": "Benjamin Leroux Volnay 1er Cru Caillerets", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1414-23", "WINE": "Benjamin Leroux Meursault", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 50.32}, {"SKU": "GCRU1422-23", "WINE": "Benjamin Leroux Vosne Romanee", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 65.1}, {"SKU": "GCRU1252-23", "WINE": "Benjamin Leroux Saint Romain Blanc Sous le Chateau", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1402-23", "WINE": "Benjamin Leroux Blagny 1er Cru la Piece Sous le Bois", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 2, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1421-23", "WINE": "Benjamin Leroux Pommard 1er Cru Rugiens Hauts", "VINTAGE": "2023", "SHELF": "1090", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU1450-23", "WINE": "Benjamin Leroux Bourgogne Aligote Les Grands Champs", "VINTAGE": "2023", "SHELF": "1100", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU7620-23", "WINE": "Domaine Bachelet Monnot Puligny Montrachet", "VINTAGE": "2023", "SHELF": "1110", "INVENTORY": 1, "Notes": "", "Cost": 43.59}, {"SKU": "GCRU7614-23", "WINE": "Domaine Bachelet Monnot Maranges Blanc 1er Cru La Fussiere", "VINTAGE": "2023", "SHELF": "1110", "INVENTORY": 2, "Notes": "", "Cost": 24.13}, {"SKU": "GCRU4710-23", "WINE": "Dominique Lafon Beaune Epenottes", "VINTAGE": "2023", "SHELF": "1110", "INVENTORY": 2, "Notes": "", "Cost": 48.7}, {"SKU": "GCRU7632-23", "WINE": "Domaine Bachelet Monnot Maranges Rouges 1er Cru Clos de la Boutiere", "VINTAGE": "2023", "SHELF": "1110", "INVENTORY": 2, "Notes": "", "Cost": 22.08}, {"SKU": "GCRU4692-23", "WINE": "Dominique Lafon Volnay", "VINTAGE": "2023", "SHELF": "1110", "INVENTORY": 1, "Notes": "", "Cost": 44.13}, {"SKU": "GCRU1001-21", "WINE": "Domaine Croix & Courbet Arbois En Chemenot", "VINTAGE": "2021", "SHELF": "1210", "INVENTORY": 1, "Notes": "", "Cost": 23.48}, {"SKU": "GCRU90830-23", "WINE": "Domaine Moreau Naudet Chablis 1er Cru Forets", "VINTAGE": "2023", "SHELF": "1210", "INVENTORY": 1, "Notes": "", "Cost": 24.8}, {"SKU": "GCRU907580-23", "WINE": "Domaine du Pelican Cuvee Trois Cepages", "VINTAGE": "2023", "SHELF": "1220", "INVENTORY": 2, "Notes": "", "Cost": 23.89}, {"SKU": "GCRU90886-23", "WINE": "Domaine du Pelican Pinot Noir Clos Saint-Laurent", "VINTAGE": "2023", "SHELF": "1220", "INVENTORY": 1, "Notes": "", "Cost": 24.04}, {"SKU": "GCRU90888-22", "WINE": "Domaine du Pelican Trousseau Beranger", "VINTAGE": "2022", "SHELF": "1220", "INVENTORY": 1, "Notes": "", "Cost": 35.36}, {"SKU": "GCRU1119-21", "WINE": "Clos Venturi Brama - Syrah", "VINTAGE": "2021", "SHELF": "1230", "INVENTORY": 3, "Notes": "", "Cost": 12.5}, {"SKU": "GCRU1122-21", "WINE": "Clos Venturi Brama - Sciaccarellu", "VINTAGE": "2021", "SHELF": "1230", "INVENTORY": 1, "Notes": "", "Cost": 13.35}, {"SKU": "GCRU100115-24", "WINE": "Clos Venturi 1769 Blanc", "VINTAGE": "2024", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 10.84}, {"SKU": "GCRU1121-24", "WINE": "Clos Venturi Brama - Biancu Gentile", "VINTAGE": "2024", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 13.85}, {"SKU": "GCRU1122-22", "WINE": "Clos Venturi Brama - Sciaccarellu", "VINTAGE": "2022", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 14.15}, {"SKU": "GCRU1123-22", "WINE": "Clos Venturi Brama - Carcaghjolu Neru", "VINTAGE": "2022", "SHELF": "1240", "INVENTORY": 3, "Notes": "", "Cost": 11.56}, {"SKU": "GCRU1110-22", "WINE": "Clos Venturi Clos Venturi Blanc", "VINTAGE": "2022", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 18.02}, {"SKU": "GCRU1111-22", "WINE": "Clos Venturi Clos Venturi Rouge", "VINTAGE": "2022", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 19.07}, {"SKU": "GCRU1111-23", "WINE": "Clos Venturi Clos Venturi Rouge", "VINTAGE": "2023", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 17.42}, {"SKU": "GCRU1115-20", "WINE": "Clos Venturi Chiesa Nera Blanc", "VINTAGE": "2020", "SHELF": "1240", "INVENTORY": 1, "Notes": "", "Cost": 38.14}, {"SKU": "GCRU8621-22", "WINE": "Domaine Danjou Banessy Supernova", "VINTAGE": "2022", "SHELF": "1250", "INVENTORY": 2, "Notes": "", "Cost": 12.51}, {"SKU": "GCRU8620-23", "WINE": "Domaine Danjou Banessy Coste Cotes Catalanes Blanc", "VINTAGE": "2023", "SHELF": "1250", "INVENTORY": 2, "Notes": "", "Cost": 16.4}, {"SKU": "GCRU8622-22", "WINE": "Domaine Danjou Banessy Clot dels Escounils", "VINTAGE": "2022", "SHELF": "1250", "INVENTORY": 1, "Notes": "", "Cost": 22.8}, {"SKU": "GCRU8624-23", "WINE": "Domaine Danjou Banessy Roboul Cotes Cotes Catalanes Rouge", "VINTAGE": "2023", "SHELF": "1250", "INVENTORY": 1, "Notes": "", "Cost": 16.4}, {"SKU": "GCRU908038-19", "WINE": "Domaine U Stiliccionu Sottu Scala", "VINTAGE": "2019", "SHELF": "1250", "INVENTORY": 2, "Notes": "", "Cost": 29.32}, {"SKU": "GCRU908030-19", "WINE": "Domaine U Stiliccionu Antica", "VINTAGE": "2019", "SHELF": "1250", "INVENTORY": 1, "Notes": "", "Cost": 15.37}, {"SKU": "GCRU106600-22", "WINE": "Sylvain Martel Julienas Les Fouillouses", "VINTAGE": "2022", "SHELF": "1260", "INVENTORY": 5, "Notes": "", "Cost": 12.75}, {"SKU": "GCRU90822-23", "WINE": "Anne Sophie Dubois Fleurie l'Alchimiste", "VINTAGE": "2023", "SHELF": "1260", "INVENTORY": 1, "Notes": "", "Cost": 12.52}, {"SKU": "GCRU9700-22", "WINE": "Domaine Mee Godard Morgon Corcelette", "VINTAGE": "2022", "SHELF": "1260", "INVENTORY": 1, "Notes": "", "Cost": 18.93}, {"SKU": "GCRU9706-21", "WINE": "Domaine Mee Godard Passerelle 557", "VINTAGE": "2021", "SHELF": "1260", "INVENTORY": 1, "Notes": "", "Cost": 28.77}, {"SKU": "GCRU9702-22", "WINE": "Domaine Mee Godard Morgon Grand Cras", "VINTAGE": "2022", "SHELF": "1260", "INVENTORY": 1, "Notes": "", "Cost": 18.07}, {"SKU": "GCRU100117-22", "WINE": "Domaine Chapel Fleurie Charbonnieres Cuvee Face Nord", "VINTAGE": "2022", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 17.85}, {"SKU": "GCRU8259-22", "WINE": "Smith Chapel Julienas Vayolette", "VINTAGE": "2022", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 13.52}, {"SKU": "GCRU8144-22", "WINE": "Smith Chapel Bourgogne Aligote", "VINTAGE": "2022", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 13.15}, {"SKU": "GCRU8144-23", "WINE": "Smith Chapel Bourgogne Aligote", "VINTAGE": "2023", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 13.08}, {"SKU": "GCRU8142-22", "WINE": "Domaine Chapel Fleurie Charbonnieres", "VINTAGE": "2022", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 22.15}, {"SKU": "GCRU8142-23", "WINE": "Domaine Chapel Fleurie Charbonnieres", "VINTAGE": "2023", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 16.0}, {"SKU": "GCRU8140-23", "WINE": "Domaine Chapel Chiroubles", "VINTAGE": "2023", "SHELF": "1270", "INVENTORY": 1, "Notes": "", "Cost": 16.06}, {"SKU": "GCRU6430-21", "WINE": "Domaine Brun Avril Chateauneuf du Pape", "VINTAGE": "2021", "SHELF": "1280", "INVENTORY": 4, "Notes": "", "Cost": 22.56}, {"SKU": "GCRU6429-23", "WINE": "Domaine Brun Avril Chateauneuf du Pape Blanc", "VINTAGE": "2023", "SHELF": "1280", "INVENTORY": 3, "Notes": "2023 vintage", "Cost": 20.36}, {"SKU": "GCRU106432-23", "WINE": "Domaine Brun Avril Cotes du Rhone Rouge", "VINTAGE": "2023", "SHELF": "1280", "INVENTORY": 1, "Notes": "", "Cost": 9.36}, {"SKU": "GCRU6430-20", "WINE": "Domaine Brun Avril Chateauneuf du Pape", "VINTAGE": "2020", "SHELF": "1290", "INVENTORY": 3, "Notes": "", "Cost": 23.38}, {"SKU": "GCRU6430-21", "WINE": "Domaine Brun Avril Chateauneuf du Pape", "VINTAGE": "2021", "SHELF": "1290", "INVENTORY": 1, "Notes": "", "Cost": 22.56}, {"SKU": "GCRU6430-22", "WINE": "Domaine Brun Avril Chateauneuf du Pape", "VINTAGE": "2022", "SHELF": "1290", "INVENTORY": 3, "Notes": "samples", "Cost": 22.56}, {"SKU": "GCRU6429-22", "WINE": "Domaine Brun Avril Chateauneuf du Pape Blanc", "VINTAGE": "2022", "SHELF": "1290", "INVENTORY": 1, "Notes": "", "Cost": 20.36}, {"SKU": "GCRU12000-24", "WINE": "Jean Louis Chave Selections Cotes Du Rhone Mon Coeur", "VINTAGE": "2024", "SHELF": "1290", "INVENTORY": 3, "Notes": "", "Cost": 10.36}, {"SKU": "GCRU12000-24", "WINE": "Jean Louis Chave Selections Cotes Du Rhone Mon Coeur", "VINTAGE": "2024", "SHELF": "1290", "INVENTORY": 4, "Notes": "", "Cost": 10.36}, {"SKU": "GCRU12000-22", "WINE": "Jean Louis Chave Selections Cotes Du Rhone Mon Coeur", "VINTAGE": "2022", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 10.5}, {"SKU": "GCRU10080-22", "WINE": "Domaine Jean Louis Chave St Joseph Rouge", "VINTAGE": "2022", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 53.0}, {"SKU": "GCRU11066-22", "WINE": "Jean Louis Chave Selections Saint Joseph Blanc Circa", "VINTAGE": "2022", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 16.5}, {"SKU": "GCRU11066-23", "WINE": "Jean Louis Chave Selections Saint Joseph Blanc Circa", "VINTAGE": "2023", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 17.0}, {"SKU": "GCRU90505-21", "WINE": "Jean Louis Chave Selections Hermitage Farconnet", "VINTAGE": "2021", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 37.0}, {"SKU": "GCRU1201-20", "WINE": "Jean Louis Chave Selections Crozes Hermitage Blanc Sybele", "VINTAGE": "2020", "SHELF": "1300", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU10075-22", "WINE": "Jean Louis Chave Selections Saint Joseph Offerus", "VINTAGE": "2022", "SHELF": "1300", "INVENTORY": 2, "Notes": "", "Cost": 16.5}, {"SKU": "GCRU6399-21", "WINE": "Clusel Roch Coteaux du Lyonnais Traboules", "VINTAGE": "2021", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 7.96}, {"SKU": "GCRU4602-22", "WINE": "Clusel Roch Vin de France Sur le Mont", "VINTAGE": "2022", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 12.78}, {"SKU": "GCRU4604-20", "WINE": "Clusel Roch Cotes du Rhone Les Vergers", "VINTAGE": "2020", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 21.61}, {"SKU": "GCRU6092-21", "WINE": "Clusel Roch Vin de France Blanc La Bergerie", "VINTAGE": "2021", "SHELF": "1310", "INVENTORY": 1, "Notes": "vintage 2022", "Cost": 11.69}, {"SKU": "GCRU6412-23", "WINE": "Clusel Roch Les Cinq Lieux", "VINTAGE": "2023", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 0.0}, {"SKU": "GCRU6410-20", "WINE": "Clusel Roch Cote Rotie Grandes Places", "VINTAGE": "2020", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 62.02}, {"SKU": "GCRU6408-21", "WINE": "Clusel Roch Cote Rotie Vialliere", "VINTAGE": "2021", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 52.73}, {"SKU": "GCRU6407-20", "WINE": "Clusel Roch Cote Rotie Les Schistes", "VINTAGE": "2020", "SHELF": "1310", "INVENTORY": 1, "Notes": "", "Cost": 35.02}, {"SKU": "GCRU3998", "WINE": "Heiwa Shuzo Kid Tsuru-Ume Kanjuku Nigori", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 18.5}, {"SKU": "GCRU100198-23", "WINE": "Kamoshibito Kuheiji Sauvage Junmai Daiginjo", "VINTAGE": "2023", "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 21.11}, {"SKU": "GCRU4179", "WINE": "Shibata Shuzo Black Yuzu", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 14.58}, {"SKU": "GCRU106001", "WINE": "Abe Junmai", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 17.83}, {"SKU": "GCRU0601", "WINE": "Ohmine 3 grain Yamadanishiki", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 18.35}, {"SKU": "GCRU4156-23", "WINE": "Heiwa Shuzo Kid Muryozan Junmai Ginjo", "VINTAGE": "NV", "SHELF": "1450", "INVENTORY": 0, "Notes": "NOT IN SYSTEM", "Cost": 33.75}, {"SKU": "GCRU4279-23", "WINE": "Heiwa Shuzo Kid Junmai Daiginjo", "VINTAGE": "NV", "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 22.15}, {"SKU": "GCRU4800", "WINE": "Houou Biden Asahi Mai Junmai Daiginjo", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 17.19}, {"SKU": "GCRU4801", "WINE": "Houou Biden Sake Mirai Junmai Daiginjo", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 21.83}, {"SKU": "GCRU4802", "WINE": "Houou Biden Black Phoenix Junmai Ginjo", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 23.75}, {"SKU": "GCRU7291-23", "WINE": "Akabu Junmai", "VINTAGE": "NV", "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 18.1}, {"SKU": "GCRU7290", "WINE": "Akabu Junmai Ginjo", "VINTAGE": NaN, "SHELF": "1450", "INVENTORY": 0, "Notes": "", "Cost": 20.69}, {"SKU": "GCRU107801-23", "WINE": "Heiwa Shuzo Kid Doburoku Ichi no Daku", "VINTAGE": NaN, "SHELF": "1460", "INVENTORY": 0, "Notes": "", "Cost": 15.14}, {"SKU": "GCRU3997", "WINE": "Heiwa Shuzo Kid Tsuru-Ume Yuzu", "VINTAGE": NaN, "SHELF": "1460", "INVENTORY": 0, "Notes": "", "Cost": 18.85}, {"SKU": "GCRU4005-23", "WINE": "Heiwa Shuzo Kid Daiginjo", "VINTAGE": "NV", "SHELF": "1460", "INVENTORY": 0, "Notes": "", "Cost": 31.8}, {"SKU": "GCRU4275", "WINE": "Heiwa Shuzo Kid Junmai", "VINTAGE": NaN, "SHELF": "1460", "INVENTORY": 0, "Notes": "", "Cost": 14.22}, {"SKU": "GCRU5526-21", "WINE": "Kuheiji Kuno Kurodashocho Tako", "VINTAGE": "2021", "SHELF": "1460", "INVENTORY": 0, "Notes": "", "Cost": 60.01}, {"SKU": "GCRU499", "WINE": "Jean Marc Roulot Liqueur de Citron", "VINTAGE": NaN, "SHELF": "1480", "INVENTORY": 0, "Notes": "", "Cost": 54.72}, {"SKU": "GCRU9051", "WINE": "Jean Marc Roulot Liqueur d'Abricots", "VINTAGE": NaN, "SHELF": "1480", "INVENTORY": 0, "Notes": "", "Cost": 43.53}, {"SKU": "GCRU100179-18", "WINE": "Domaine Moreau Naudet Chablis 1er Cru Montee de Tonnerre", "VINTAGE": "2018", "SHELF": "1490", "INVENTORY": 0, "Notes": "GROUND", "Cost": 201.37}, {"SKU": "GCRU4293", "WINE": "Shibata Shuzo Black Junmai Ginjo", "VINTAGE": NaN, "SHELF": "Small Shelf", "INVENTORY": 0, "Notes": "", "Cost": 5.02}];
+
+let filtered = [...INVENTORY];
+let selected = new Set();
+let qrCache = {};
+
+function init() {
+  // Populate shelf filter
+  const shelves = [...new Set(INVENTORY.map(i => i.SHELF).filter(Boolean))].sort((a,b) => {
+    const na = parseInt(a), nb = parseInt(b);
+    if(!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+  const sel = document.getElementById('shelfFilter');
+  shelves.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s; o.textContent = 'Shelf ' + s;
+    sel.appendChild(o);
+  });
+
+  // Stats
+  const totalQty = INVENTORY.reduce((s,i) => s + (i.INVENTORY||0), 0);
+  const totalVal = INVENTORY.reduce((s,i) => s + (i.Cost||0)*(i.INVENTORY||0), 0);
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat"><div class="stat-val">${INVENTORY.length}</div><div class="stat-lbl">SKUs</div></div>
+    <div class="stat"><div class="stat-val">${totalQty}</div><div class="stat-lbl">Total Bottles</div></div>
+    <div class="stat"><div class="stat-val">${shelves.length}</div><div class="stat-lbl">Shelf Locations</div></div>
+    <div class="stat"><div class="stat-val">$${totalVal.toLocaleString('en-US',{maximumFractionDigits:0})}</div><div class="stat-lbl">Cellar Value (Cost)</div></div>
+  `;
+  renderGrid();
+}
+
+function filterItems() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sh = document.getElementById('shelfFilter').value;
+  filtered = INVENTORY.filter(item => {
+    const matchQ = !q || item.WINE.toLowerCase().includes(q) || item.SKU.toLowerCase().includes(q);
+    const matchSh = !sh || item.SHELF === sh;
+    return matchQ && matchSh;
+  });
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('wineGrid');
+  const noRes = document.getElementById('noResults');
+  document.getElementById('countBadge').textContent = filtered.length + ' items';
+  if (filtered.length === 0) { grid.innerHTML = ''; noRes.style.display = 'block'; return; }
+  noRes.style.display = 'none';
+  grid.innerHTML = filtered.map(item => `
+    <div class="card ${selected.has(item.SKU) ? 'selected' : ''}" onclick="toggleSelect('${item.SKU.replace(/'/g,"\\'")}')">
+      <div class="card-sku">${item.SKU}</div>
+      <div class="card-wine">${item.WINE}</div>
+      <div class="card-meta">
+        <span class="chip chip-vintage">${item.VINTAGE}</span>
+        ${item.SHELF ? `<span class="chip chip-shelf">Shelf ${item.SHELF}</span>` : ''}
+        <span class="chip chip-qty">${item.INVENTORY} btl</span>
+        ${item.Notes ? `<span class="chip chip-note">${item.Notes}</span>` : ''}
+      </div>
+    </div>
+  `).join('');
+  updateSelectedBadge();
+}
+
+function toggleSelect(sku) {
+  if (selected.has(sku)) selected.delete(sku);
+  else selected.add(sku);
+  renderGrid();
+}
+
+function selectAll() {
+  filtered.forEach(i => selected.add(i.SKU));
+  renderGrid();
+}
+
+function clearSelection() {
+  selected.clear();
+  renderGrid();
+}
+
+function updateSelectedBadge() {
+  const badge = document.getElementById('selectedBadge');
+  badge.textContent = selected.size + ' selected';
+  badge.classList.toggle('visible', selected.size > 0);
+}
+
+function getUrl(sku) {
+  return FORM_BASE + encodeURIComponent(sku);
+}
+
+function makeQR(container, sku, size) {
+  container.innerHTML = '';
+  new QRCode(container, { text: getUrl(sku), width: size, height: size, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
+}
+
+function openPrintModal() {
+  const items = selected.size > 0 ? INVENTORY.filter(i => selected.has(i.SKU)) : filtered;
+  if (items.length === 0) { alert('No items selected. Select items or search to filter.'); return; }
+  document.getElementById('modalDesc').textContent = `Preview of ${items.length} label${items.length > 1 ? 's' : ''} to print. Each QR code encodes the form URL with the SKU pre-filled.`;
+  const preview = document.getElementById('labelPreview');
+  preview.innerHTML = '';
+  const show = items.slice(0, 30);
+  show.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'label-card';
+    div.innerHTML = `<div class="lc-qr" id="prev-${item.SKU.replace(/[^a-z0-9]/gi,'_')}"></div><div class="lc-wine">${item.WINE}</div><div class="lc-sku">${item.SKU}</div><div class="lc-meta">${item.VINTAGE} · Shelf ${item.SHELF}</div>`;
+    preview.appendChild(div);
+    setTimeout(() => {
+      const qrEl = div.querySelector('.lc-qr');
+      if (qrEl) makeQR(qrEl, item.SKU, 80);
+    }, 50);
+  });
+  if (items.length > 30) {
+    const note = document.createElement('div');
+    note.style.cssText = 'color:#8a7a65;font-size:12px;padding:10px;width:100%;text-align:center;';
+    note.textContent = `+ ${items.length - 30} more labels (all will print)`;
+    preview.appendChild(note);
+  }
+  document.getElementById('printModal').classList.add('open');
+  // Prep print area
+  buildPrintArea(items);
+}
+
+function buildPrintArea(items) {
+  const area = document.getElementById('print-area');
+  area.innerHTML = '';
+  items.forEach(item => {
+    const lbl = document.createElement('div');
+    lbl.className = 'print-label';
+    const qrDiv = document.createElement('div');
+    qrDiv.style.margin = '0 auto 6px';
+    lbl.innerHTML = `<div class="pl-wine">${item.WINE}</div>`;
+    lbl.appendChild(qrDiv);
+    lbl.innerHTML += `<div class="pl-sku">${item.SKU}</div><div class="pl-meta">${item.VINTAGE} · Shelf ${item.SHELF} · ${item.INVENTORY} btl</div>`;
+    lbl.insertBefore(qrDiv, lbl.querySelector('.pl-sku'));
+    area.appendChild(lbl);
+    setTimeout(() => makeQR(qrDiv, item.SKU, 130), 100);
+  });
+}
+
+function closePrintModal() {
+  document.getElementById('printModal').classList.remove('open');
+}
+
+function doPrint() {
+  closePrintModal();
+  setTimeout(() => window.print(), 300);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (tab === 'labels' && i===0) || (tab === 'guide' && i===1)));
+  document.getElementById('tab-labels').classList.toggle('active', tab === 'labels');
+  document.getElementById('tab-guide').classList.toggle('active', tab === 'guide');
+}
+
+// Close modal on overlay click
+document.getElementById('printModal').addEventListener('click', function(e) {
+  if (e.target === this) closePrintModal();
+});
+
+init();
+</script>
+</body>
+</html>
